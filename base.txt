@@ -1,0 +1,34 @@
+Core Functionality
+This project, named Energiekeuzehulp (Energy Choice Helper), is an interactive web-based wizard designed to advise users on the best type of energy contract for their personal situation (e.g., Variable, Fixed 1-year, Fixed 3-year, or Dynamic).
+
+The Wizard Flow: Users click through a sequence of questions regarding their household, solar panel setup, risk tolerance, and energy consumption.
+The Algorithm: It computes scores and matched percentages for the 4 different energy contract types.
+Results & Feedback: At the end, it shows the recommended contract type alongside the percentage match. It then includes a PostResultsSurvey to collect user feedback on whether the advice was helpful.
+💻 Tech Stack
+The project was originally bootstrapped via Lovable (a no-code/low-code AI platform) but has been ejected into a standard full-stack JavaScript environment using:
+
+Frontend Framework: React 18 with TypeScript, managed by Vite.
+Styling: Tailwind CSS along with shadcn-ui components and Radix UI primitives.
+Backend Framework: A lightweight Express.js server (server/index.js).
+Database: Local SQLite database using better-sqlite3.
+Process Management: concurrently is used to run both the Vite frontend process and the Express backend process simultaneously during local development.
+📂 Architecture & Routing
+The frontend is routed using react-router-dom (defined in src/App.tsx), with four main pages:
+
+/ (IntroPage.tsx): The landing page describing the survey and estimating the time required.
+/keuzehulp (Index.tsx & ContractAdvisor.tsx): The core application where questions are presented, answers are registered, and results are calculated via utility functions (src/utils/contractUtils.ts).
+/dataviewer (AdminResults.tsx): An admin dashboard utilizing recharts to view the aggregated records of user responses.
+/admin (AdminRoute.tsx): An admin gateway (likely with some basic authentication/protection).
+🛠️ Data Flow & Backend
+Instead of a serverless database (like Supabase or Firebase), the project currently relies on its built-in SQLite Express backend.
+
+When a user completes the survey, questions, algorithms, and scores from the frontend are submitted via a POST request to /api/responses and /api/contract-results.
+The Express server (server/index.js) processes the request and persists it to a local SQLite database into tables like user_responses_v1 and contract_results.
+If the user fills in the post-results feedback, it hits /api/survey-responses to insert into the contract_survey_responses table.
+🚀 Getting Started Locally
+If you want to spin this exact codebase up locally for reference:
+
+Make sure you are in c:\www\keuzehulp.
+Run npm install (if you haven't already).
+Run npm run dev. This utilizes the concurrently library to launch both the Express API (on port 3001) and the Vite React app simultaneously.
+If you wish to build it for production, running npm run build will create a dist folder. In production, the Express server inherently serves these static React files if no API routes are hit.
