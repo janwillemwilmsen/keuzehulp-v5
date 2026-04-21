@@ -1,0 +1,15 @@
+{
+  "name": "keuzehulp-v5",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000k\u0000e\u0000u\u0000z\u0000e\u0000h\u0000u\u0000l\u0000p\u0000-\u0000v\u00005\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "postgres": "^3.4.9"
+  }
+}

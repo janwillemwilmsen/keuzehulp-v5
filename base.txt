@@ -1,17 +1,22 @@
+
+
+
 Core Functionality
+This tool manages questionnaires and provides advice based on the answers.
+The owners and contentmanagers can create edit and delete multiple choise and single select questions and answers and provide scores for each answer. Like a contentmanagement system.
+The owners and contentmanager can create questionnaires for the users of the webapp to fill in, and get an advice from. The advice is calculated based upon scores derived from answers in the questionnaires.
+The data is written to a supabase database. 
+
 This project, named Energiekeuzehulp (Energy Choice Helper), is an interactive web-based wizard designed to advise users on the best type of energy contract for their personal situation (e.g., Variable, Fixed 1-year, Fixed 3-year, or Dynamic).
 
 The Wizard Flow: Users click through a sequence of questions regarding their household, solar panel setup, risk tolerance, and energy consumption.
 The Algorithm: It computes scores and matched percentages for the 4 different energy contract types.
 Results & Feedback: At the end, it shows the recommended contract type alongside the percentage match. It then includes a PostResultsSurvey to collect user feedback on whether the advice was helpful.
-💻 Tech Stack
-The project was originally bootstrapped via Lovable (a no-code/low-code AI platform) but has been ejected into a standard full-stack JavaScript environment using:
 
+Tech Stack
 Frontend Framework: React 18 with TypeScript, managed by Vite.
 Styling: Tailwind CSS along with shadcn-ui components and Radix UI primitives.
-Backend Framework: A lightweight Express.js server (server/index.js).
-Database: Local SQLite database using better-sqlite3.
-Process Management: concurrently is used to run both the Vite frontend process and the Express backend process simultaneously during local development.
+Database:supabase
 📂 Architecture & Routing
 The frontend is routed using react-router-dom (defined in src/App.tsx), with four main pages:
 
