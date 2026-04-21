@@ -3,37 +3,66 @@
 
 Core Functionality
 This tool manages questionnaires and provides advice based on the answers.
-The owners and contentmanagers can create edit and delete multiple choise and single select questions and answers and provide scores for each answer. Like a contentmanagement system.
+The owners and contentmanagers can create edit and delete multiple choise and single select and open questions and answers and provide scores for each answer. Like a contentmanagement system.
 The owners and contentmanager can create questionnaires for the users of the webapp to fill in, and get an advice from. The advice is calculated based upon scores derived from answers in the questionnaires.
 The data is written to a supabase database. 
 
-This project, named Energiekeuzehulp (Energy Choice Helper), is an interactive web-based wizard designed to advise users on the best type of energy contract for their personal situation (e.g., Variable, Fixed 1-year, Fixed 3-year, or Dynamic).
+The main use case is to create questionnaires for energy contract advice. The flow is interactive web-based wizard designed to advise users on the best type of energy contract for their personal situation (e.g., Variable, Fixed 1-year, Fixed 2-year, Fixed 3-year, or Dynamic).
+The questionnaires are used for customers of two different energy suppliers. Essent and Energiedirect. Essent does not sell 2 year fixed contracts.
 
-The Wizard Flow: Users click through a sequence of questions regarding their household, solar panel setup, risk tolerance, and energy consumption.
-The Algorithm: It computes scores and matched percentages for the 4 different energy contract types.
-Results & Feedback: At the end, it shows the recommended contract type alongside the percentage match. It then includes a PostResultsSurvey to collect user feedback on whether the advice was helpful.
+The Wizard Flow: Users click through a sequence of questions regarding their household, flexibility, liking/preference and termination.
+
+Question 1: Welke apparaten heb je nu of ga je binnen 6 maanden aanschaffen? (meerkeuze)
+Answer: Zonnepanelen   Variabel[1] | Vast 1 jaar[0] | Vast 2 jaar[0] | Vast 3 jaar[0] | Dynamisch[1] | Time of Use[1]
+Answer: Warmtepomp     Variabel[1] | Vast 1 jaar[0] | Vast 2 jaar[0] | Vast 3 jaar[0] | Dynamisch[1] | Time of Use[2]
+Answer: Thuisbatterij  Variabel[1] | Vast 1 jaar[0] | Vast 2 jaar[0] | Vast 3 jaar[0] | Dynamisch[1] | Time of Use[2]
+Answer: Laadpaal       Variabel[1] | Vast 1 jaar[0] | Vast 2 jaar[0] | Vast 3 jaar[0] | Dynamisch[1] | Time of Use[3]         
+Answer: Geen           Variabel[0] | Vast 1 jaar[1] | Vast 2 jaar[1] | Vast 3 jaar[1] | Dynamisch[0] | Time of Use[0] 
+
+
+Question 2: Wil je je stroomverbruik aanpassen naar goedkopere moment op de dag, als je daarmee kunt besparen?
+Answer: Ja, dat wil ik              Variabel[1] | Vast 1 jaar[0] | Vast 2 jaar[0] | Vast 3 jaar[0] | Dynamisch[3] | Time of Use[4] 
+Answer: Nee, dat wil of kan ik niet Variabel[2] | Vast 1 jaar[2] | Vast 2 jaar[2] | Vast 3 jaar[2] | Dynamisch[0] | Time of Use[0] 
+
+Question 3: Energietarieven kunnen veranderen. Wat past het beste bij jou?  
+Answer: Ik wil dat mijn energietarieven vast blijven. Dan weet ik waar ik aan toe ben.
+Variabel[0] | Vast 1 jaar[5] | Vast 2 jaar[6] | Vast 3 jaar[7] | Dynamisch[0] | Time of Use[4]
+
+Answer: Ik wil zekerheid, maar niet te lang vastzitten. 
+Variabel[6] | Vast 1 jaar[3] | Vast 2 jaar[2] | Vast 3 jaar[1] | Dynamisch[1] | Time of Use[3]
+
+Answer: Ik vind schommelende prijzen niet erg, Soms betaal ik meer, soms minder. Ik kan daar mee omgaan
+Variabel[4] | Vast 1 jaar[0] | Vast 2 jaar[0] | Vast 3 jaar[0] | Dynamisch[4] | Time of Use[1]
+
+Question 4: Wil je je energiecontract kunnen aanpassen of stoppen wanneer je wilt?
+Answer:Ja, dat is voor mij belangrijk   Variabel[4] | Vast 1 jaar[2] | Vast 2 jaar[1] | Vast 3 jaar[0] | Dynamisch[4] | Time of Use[2]
+Answer:Soms is dat handig               Variabel[3] | Vast 1 jaar[3] | Vast 2 jaar[2] | Vast 3 jaar[1] | Dynamisch[2] | Time of Use[2]
+Answer:Niet zo belangrijk               Variabel[0] | Vast 1 jaar[2] | Vast 2 jaar[4] | Vast 3 jaar[5] | Dynamisch[-1] | Time of Use[0]
+Answer:Nee, dat hoeft niet              Variabel[0] | Vast 1 jaar[2] | Vast 2 jaar[5] | Vast 3 jaar[6] | Dynamisch[-2] | Time of Use[0]
+
+
+The Algorithm: It computes scores and matched percentages for the 4 or 5 different energy contract types.
+
+Results & Feedback: 
+At the end, it shows the recommended contract type alongside the percentage match. 
+For the supplier Essent it shows the 4 contract types. For the supplier Energiedirect it shows the 5 contract types. Every advice is supported by explanations multi attribute utility theory and feature preference mapping and transparant Recommendations.
+
+Contrastive Explanation. Instead of just saying "This is good for you," the system uses contrastive explanations. It highlights the tension between your preferences. 
+Multi-Attribute Utility Theory (MAUT)This is the underlying logic. The "70% match" suggests that the system assigns weights to different attributes (price, duration, sustainability).The "Values": These are the high-scoring attributes where your needs perfectly overlap with the contract's features (the green checkmarks).The "Negative Variants": These represent "Conflict Resolution." The system acknowledges where the product is a "mismatch" for a specific sub-preference but explains why it still fits the overall profile.
+Feature-Preference Mapping and transparent Recommendation (Trust Calibration)By showing the "negative" side (the yellow bullets), the tool is performing Trust Calibration. If a tool only shows one match, users often become skeptical.
 
 Tech Stack
-Frontend Framework: React 18 with TypeScript, managed by Vite.
+Frontend Framework: React 18 with TypeScript. Node, Vite is approveved if needed. 
 Styling: Tailwind CSS along with shadcn-ui components and Radix UI primitives.
-Database:supabase
-📂 Architecture & Routing
-The frontend is routed using react-router-dom (defined in src/App.tsx), with four main pages:
+Database: Supabase
+Auth: Supabase please provide help with setting this up.
 
-/ (IntroPage.tsx): The landing page describing the survey and estimating the time required.
-/keuzehulp (Index.tsx & ContractAdvisor.tsx): The core application where questions are presented, answers are registered, and results are calculated via utility functions (src/utils/contractUtils.ts).
-/dataviewer (AdminResults.tsx): An admin dashboard utilizing recharts to view the aggregated records of user responses.
-/admin (AdminRoute.tsx): An admin gateway (likely with some basic authentication/protection).
-🛠️ Data Flow & Backend
-Instead of a serverless database (like Supabase or Firebase), the project currently relies on its built-in SQLite Express backend.
+Architecture & Routing
+The frontend is routed using react-router-dom 
 
-When a user completes the survey, questions, algorithms, and scores from the frontend are submitted via a POST request to /api/responses and /api/contract-results.
-The Express server (server/index.js) processes the request and persists it to a local SQLite database into tables like user_responses_v1 and contract_results.
-If the user fills in the post-results feedback, it hits /api/survey-responses to insert into the contract_survey_responses table.
-🚀 Getting Started Locally
-If you want to spin this exact codebase up locally for reference:
+/ The Homepage with nothing here.
+/admin where users from the company can login, create questionnaires, edit questionnaires, delete questionnaires and see the results of the questionnaires. 
 
-Make sure you are in c:\www\keuzehulp.
-Run npm install (if you haven't already).
-Run npm run dev. This utilizes the concurrently library to launch both the Express API (on port 3001) and the Vite React app simultaneously.
-If you wish to build it for production, running npm run build will create a dist folder. In production, the Express server inherently serves these static React files if no API routes are hit.
+/keuzehulp/{randomID} the url for the questionnaires. Every questionnaires has a text intro, with some usps and a button to start the questionnaire.
+
+
