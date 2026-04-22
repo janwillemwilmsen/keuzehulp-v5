@@ -76,6 +76,19 @@ CREATE TABLE IF NOT EXISTS public.answer_scores (
     UNIQUE(answer_id, contract_type_id)
 );
 
+-- Scoring Settings (singleton row of tunable engine parameters).
+-- See supabase/migrations/20260422_scoring_settings.sql for field docs.
+CREATE TABLE IF NOT EXISTS public.scoring_settings (
+    id TEXT PRIMARY KEY DEFAULT 'default' CHECK (id = 'default'),
+    base_min_percentage     INTEGER NOT NULL DEFAULT 20  CHECK (base_min_percentage BETWEEN 0 AND 100),
+    final_min_percentage    INTEGER NOT NULL DEFAULT 15  CHECK (final_min_percentage BETWEEN 0 AND 100),
+    adjustment_max_points   INTEGER NOT NULL DEFAULT 5   CHECK (adjustment_max_points BETWEEN 0 AND 50),
+    non_optimal_ceiling     INTEGER NOT NULL DEFAULT 95  CHECK (non_optimal_ceiling BETWEEN 0 AND 100),
+    optimal_ceiling         INTEGER NOT NULL DEFAULT 100 CHECK (optimal_ceiling BETWEEN 0 AND 100),
+    neutral_when_empty_percentage INTEGER NOT NULL DEFAULT 50 CHECK (neutral_when_empty_percentage BETWEEN 0 AND 100),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ============================================================
 -- SEED DATA — run this after CREATE TABLE statements
 -- ============================================================
@@ -98,6 +111,10 @@ ON CONFLICT (slug) DO UPDATE SET
   order_index = EXCLUDED.order_index,
   name = EXCLUDED.name,
   description = EXCLUDED.description;
+
+-- Scoring Settings seed row
+INSERT INTO public.scoring_settings (id) VALUES ('default')
+ON CONFLICT (id) DO NOTHING;
 
 -- Supplier <-> Contract Type mapping
 -- Essent (no vast2)

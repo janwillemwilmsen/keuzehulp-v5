@@ -121,5 +121,22 @@ export const adminService = {
     return handleApiResult(
       supabase.from('contract_types').select('*').order('order_index', { ascending: true })
     );
-  }
+  },
+
+  // Scoring engine settings (singleton row)
+  getScoringSettings: async () => {
+    return handleApiResult(
+      supabase.from('scoring_settings').select('*').eq('id', 'default').single()
+    );
+  },
+
+  updateScoringSettings: async (payload: Record<string, number> | Record<string, any>) => {
+    return handleApiResult(
+      supabase.from('scoring_settings')
+        .update({ ...payload, updated_at: new Date().toISOString() })
+        .eq('id', 'default')
+        .select()
+        .single()
+    );
+  },
 };

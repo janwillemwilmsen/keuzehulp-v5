@@ -6,14 +6,14 @@ import { calculateResults } from '@/services/calculator';
 export default function WizardResults() {
   useParams();
   const navigate = useNavigate();
-  const { supplierPrefix, answers, questionnaireData, loadingData } = useWizard();
+  const { supplierPrefix, answers, questionnaireData, scoringSettings, loadingData } = useWizard();
   
   const themeClass = supplierPrefix === 'essent' ? 'theme-essent' : 'theme-energiedirect';
 
   const ranking = useMemo(() => {
     if (!questionnaireData) return [];
-    return calculateResults(questionnaireData, answers);
-  }, [questionnaireData, answers]);
+    return calculateResults(questionnaireData, answers, scoringSettings);
+  }, [questionnaireData, answers, scoringSettings]);
 
   const winner = ranking[0];
 

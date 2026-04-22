@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Home from './pages/Home';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionnaireEditor from './pages/admin/QuestionnaireEditor';
+import ScoringRules from './pages/admin/ScoringRules';
 import Login from './pages/admin/Login';
 import WizardEntry from './pages/wizard/WizardEntry';
 import WizardStep from './pages/wizard/WizardStep';
@@ -42,6 +43,14 @@ function App() {
                 <QuestionnaireEditor />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/admin/scoring-rules"
+            element={
+              <ProtectedRoute>
+                <ScoringRules />
+              </ProtectedRoute>
+            }
           />
           
           {/* Wizard Routes */}

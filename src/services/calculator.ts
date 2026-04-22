@@ -21,6 +21,29 @@ export interface ContractResult {
 }
 
 /**
+ * Tunable parameters of the scoring engine. Editable via the admin
+ * "Rekenregels" page (table `scoring_settings`, singleton row id='default').
+ * Every field is in percentage points.
+ */
+export interface ScoringSettings {
+  base_min_percentage: number;           // floor applied to the normalised (base) percentage
+  final_min_percentage: number;          // absolute floor applied after fine-tuning
+  adjustment_max_points: number;         // max absolute ±adjustment from sentiment mix
+  non_optimal_ceiling: number;           // cap when any neutral/negative rationale is present
+  optimal_ceiling: number;               // cap when all rationales are positive
+  neutral_when_empty_percentage: number; // fallback when score range is 0
+}
+
+export const DEFAULT_SCORING_SETTINGS: ScoringSettings = {
+  base_min_percentage: 20,
+  final_min_percentage: 15,
+  adjustment_max_points: 5,
+  non_optimal_ceiling: 95,
+  optimal_ceiling: 100,
+  neutral_when_empty_percentage: 50,
+};
+
+/**
  * Collects all unique contract types from the loaded questionnaire data
  * (from the answer_scores → contract_types join). This is supplier-aware:
  * only contract types that actually appear in any answer_score row will
@@ -100,7 +123,8 @@ function questionMin(question: any, slug: string): number {
  */
 export function calculateResults(
   questionnaireData: any,
-  selectedAnswers: Record<string, string[]>
+  selectedAnswers: Record<string, string[]>,
+  settings: ScoringSettings = DEFAULT_SCORING_SETTINGS
 ): ContractResult[] {
   const questions: any[] = questionnaireData?.questions ?? [];
   if (questions.length === 0) return [];
@@ -161,12 +185,12 @@ export function calculateResults(
     const max = maxScores[slug];
     const raw = rawScores[slug];
     const range = max - min;
-    const pct = range !== 0 ? ((raw - min) / range) * 100 : 50;
-    // Hard floor of 20% so a contract never disappears; cap at 100%
-    basePercentages[slug] = Math.max(20, Math.min(100, pct));
+    const pct = range !== 0 ? ((raw - min) / range) * 100 : settings.neutral_when_empty_percentage;
+    // Floor so a contract never disappears; cap at 100%
+    basePercentages[slug] = Math.max(settings.base_min_percentage, Math.min(100, pct));
   });
 
-  // --- Step 3: Strengths-based fine-tuning (±5%) ---
+  // --- Step 3: Strengths-based fine-tuning (±adjustment_max_points) ---
   const finalPercentages: Record<string, number> = {};
   contractTypes.forEach(ct => {
     const { slug } = ct;
@@ -177,12 +201,12 @@ export function calculateResults(
       const optimalCount = explanations.filter(e => e.type === 'positive').length;
       const negativeCount = explanations.filter(e => e.type === 'negative').length;
       const adjustmentFactor = (optimalCount - negativeCount) / totalExplanations;
-      const adjustment = adjustmentFactor * 5; // max ± 5pp
+      const adjustment = adjustmentFactor * settings.adjustment_max_points;
 
       const hasNonOptimal = negativeCount > 0 || explanations.some(e => e.type === 'neutral');
-      const ceiling = hasNonOptimal ? 95 : 100;
+      const ceiling = hasNonOptimal ? settings.non_optimal_ceiling : settings.optimal_ceiling;
       finalPercentages[slug] = Math.round(
-        Math.max(15, Math.min(ceiling, basePercentages[slug] + adjustment))
+        Math.max(settings.final_min_percentage, Math.min(ceiling, basePercentages[slug] + adjustment))
       );
     } else {
       finalPercentages[slug] = Math.round(basePercentages[slug]);

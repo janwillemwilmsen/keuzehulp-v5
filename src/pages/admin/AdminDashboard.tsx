@@ -45,18 +45,26 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8 gap-4 flex-wrap">
         <div>
            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
            <p className="text-muted-foreground mt-2">Beheer je vragenlijsten en resultaten.</p>
         </div>
-        <button 
-          onClick={handleCreate}
-          disabled={isCreating}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium shadow-sm hover:bg-primary/90"
-        >
-          {isCreating ? 'Laden...' : '+ Nieuwe Keuzehulp'}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin/scoring-rules"
+            className="px-4 py-2 rounded-md font-medium border border-border bg-background hover:bg-muted text-sm"
+          >
+            Rekenregels
+          </Link>
+          <button
+            onClick={handleCreate}
+            disabled={isCreating}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium shadow-sm hover:bg-primary/90"
+          >
+            {isCreating ? 'Laden...' : '+ Nieuwe Keuzehulp'}
+          </button>
+        </div>
       </div>
 
       {loading ? (
