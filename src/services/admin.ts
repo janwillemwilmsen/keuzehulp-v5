@@ -41,11 +41,11 @@ export const adminService = {
           )
         ),
         questions (
-          id, text, type, order_index, explanation_positive, explanation_neutral, explanation_negative,
+          id, text, type, order_index,
           answers (
             id, text, order_index,
             answer_scores (
-              id, contract_type_id, score, explanation_text, explanation_type,
+              id, contract_type_id, score, explanation_text,
               contract_types ( id, slug, name, order_index )
             )
           )
@@ -100,16 +100,14 @@ export const adminService = {
     answer_id: string,
     contract_type_id: string,
     score: number,
-    explanation_text?: string | null,
-    explanation_type?: string | null
+    explanation_text?: string | null
   ) => {
     return handleApiResult(
       supabase.from('answer_scores').upsert({
         answer_id,
         contract_type_id,
         score,
-        explanation_text: explanation_text ?? null,
-        explanation_type: explanation_type ?? null
+        explanation_text: explanation_text ?? null
       }, { onConflict: 'answer_id, contract_type_id' }).select().single()
     );
   },

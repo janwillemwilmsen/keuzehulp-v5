@@ -2,16 +2,23 @@ import { useState } from 'react';
 import { adminService } from '@/services/admin';
 
 // ─── ScoreCell ────────────────────────────────────────────────────────────────
-// One controlled component per (answer × contract type) matrix cell.
-// Contains: score, explanation type, explanation text.
-// All saved together in one upsert on blur so no field overwrites another.
+// One cell per (answer × contract type).
+// Two inputs only: the score (integer) and a free-text rationale.
+// The visual sentiment (positive / neutral / negative) is derived from the
+// sign of the score at render time, so it cannot drift from what is saved.
 
-type ExpType = 'positive' | 'neutral' | 'negative';
+type Sentiment = 'positive' | 'neutral' | 'negative';
 
-const TYPE_STYLES: Record<ExpType, { label: string; bg: string; border: string; text: string }> = {
-  positive: { label: '✅', bg: 'bg-green-50/70',  border: 'border-green-200', text: 'text-green-700' },
-  neutral:  { label: '🟡', bg: 'bg-yellow-50/70', border: 'border-yellow-200', text: 'text-yellow-700' },
-  negative: { label: '❌', bg: 'bg-red-50/70',    border: 'border-red-200', text: 'text-red-700' },
+function sentimentOf(score: number): Sentiment {
+  if (score > 0) return 'positive';
+  if (score < 0) return 'negative';
+  return 'neutral';
+}
+
+const SENTIMENT_STYLES: Record<Sentiment, { bg: string; border: string; ring: string }> = {
+  positive: { bg: 'bg-green-50/70',  border: 'border-green-200',  ring: 'focus:ring-green-400' },
+  neutral:  { bg: 'bg-yellow-50/60', border: 'border-yellow-200', ring: 'focus:ring-yellow-400' },
+  negative: { bg: 'bg-red-50/70',    border: 'border-red-200',    ring: 'focus:ring-red-400' },
 };
 
 function ScoreCell({
@@ -21,17 +28,16 @@ function ScoreCell({
 }: {
   answerId: string;
   contractTypeId: string;
-  initial: { score: number; expType: ExpType; expText: string };
+  initial: { score: number; expText: string };
 }) {
   const [score, setScore]     = useState(initial.score);
-  const [expType, setExpType] = useState<ExpType>(initial.expType);
   const [expText, setExpText] = useState(initial.expText);
   const [saving, setSaving]   = useState(false);
 
-  const save = async (s: number, t: ExpType, txt: string) => {
+  const save = async (s: number, txt: string) => {
     setSaving(true);
     try {
-      await adminService.upsertAnswerScore(answerId, contractTypeId, s, txt || null, t);
+      await adminService.upsertAnswerScore(answerId, contractTypeId, s, txt || null);
     } catch (e) {
       console.error('Save failed', e);
     } finally {
@@ -44,41 +50,24 @@ function ScoreCell({
     score < 0 ? 'border-red-300 bg-red-50 text-red-800 font-bold' :
     'border-border bg-muted/10 text-muted-foreground';
 
-  const style = TYPE_STYLES[expType];
+  const style = SENTIMENT_STYLES[sentimentOf(score)];
 
   return (
     <div className={`space-y-1.5 relative ${saving ? 'opacity-80' : ''}`}>
-      {/* Score + type on one line */}
-      <div className="flex gap-1">
-        <input
-          type="number"
-          value={score}
-          onChange={e => setScore(parseInt(e.target.value, 10) || 0)}
-          onBlur={() => save(score, expType, expText)}
-          className={`w-14 p-1 border rounded text-center text-xs font-mono ${scoreColor} focus:outline-none focus:ring-1 focus:ring-primary`}
-        />
-        <select
-          value={expType}
-          onChange={e => {
-            const t = e.target.value as ExpType;
-            setExpType(t);
-            save(score, t, expText);
-          }}
-          className={`flex-1 p-1 border rounded text-[10px] font-semibold ${style.bg} ${style.border} ${style.text} focus:outline-none focus:ring-1 focus:ring-primary`}
-        >
-          <option value="positive">✅ Positief</option>
-          <option value="neutral">🟡 Neutraal</option>
-          <option value="negative">❌ Negatief</option>
-        </select>
-      </div>
-      {/* Explanation text */}
+      <input
+        type="number"
+        value={score}
+        onChange={e => setScore(parseInt(e.target.value, 10) || 0)}
+        onBlur={() => save(score, expText)}
+        className={`w-16 p-1 border rounded text-center text-xs font-mono ${scoreColor} focus:outline-none focus:ring-1 focus:ring-primary`}
+      />
       <textarea
         value={expText}
         onChange={e => setExpText(e.target.value)}
-        onBlur={() => save(score, expType, expText)}
-        placeholder="Uitleg…"
-        rows={2}
-        className={`w-full p-1 border ${style.border} ${style.bg} rounded text-[11px] leading-tight resize-none focus:ring-1 focus:ring-primary outline-none placeholder:opacity-30`}
+        onBlur={() => save(score, expText)}
+        placeholder="Waarom past dit contract (niet) bij dit antwoord?"
+        rows={3}
+        className={`w-full p-1.5 border ${style.border} ${style.bg} rounded text-[11px] leading-tight resize-none focus:ring-1 ${style.ring} outline-none placeholder:opacity-40`}
       />
     </div>
   );
@@ -126,7 +115,6 @@ export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, 
               );
               const initial = {
                 score:   row?.score ?? 0,
-                expType: (row?.explanation_type ?? 'neutral') as ExpType,
                 expText: row?.explanation_text ?? '',
               };
               return (

@@ -14,7 +14,9 @@ export interface ContractResult {
   percentage: number;
   explanations: {
     text: string;
-    type: 'positive' | 'neutral' | 'negative'; // stored exactly as in DB
+    // Derived from the sign of the underlying answer_scores.score at calc time;
+    // not persisted as its own column anymore.
+    type: 'positive' | 'neutral' | 'negative';
   }[];
 }
 
@@ -119,10 +121,6 @@ export function calculateResults(
   questions.forEach(q => {
     const chosenIds = selectedAnswers[q.id] ?? [];
 
-    // Per contract type: accumulate this question's score contribution
-    const questionScorePerSlug: Record<string, number> = {};
-    contractTypes.forEach(ct => { questionScorePerSlug[ct.slug] = 0; });
-
     chosenIds.forEach(answerId => {
       const answer = (q.answers ?? []).find((a: any) => a.id === answerId);
       if (!answer) return;
@@ -130,35 +128,20 @@ export function calculateResults(
       (answer.answer_scores ?? []).forEach((s: any) => {
         const slug = s.contract_types?.slug;
         if (!slug || rawScores[slug] === undefined) return;
-        rawScores[slug] += s.score ?? 0;
-        if (questionScorePerSlug[slug] !== undefined) {
-          questionScorePerSlug[slug] += s.score ?? 0;
+
+        const score = s.score ?? 0;
+        rawScores[slug] += score;
+
+        // Answer-level rationale: shown on the results page, grouped by
+        // sentiment which is derived from the sign of this answer's score
+        // for this contract type.
+        const text = (s.explanation_text ?? '').trim();
+        if (text && explanationsBuckets[slug] !== undefined) {
+          const type: 'positive' | 'neutral' | 'negative' =
+            score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+          explanationsBuckets[slug].push({ text, type });
         }
       });
-    });
-
-    // For each contract type, pick the right question-level explanation
-    // based on whether this question's score contribution was positive, zero, or negative
-    contractTypes.forEach(ct => {
-      const qScore = questionScorePerSlug[ct.slug] ?? 0;
-      let text = '';
-      let type: 'positive' | 'neutral' | 'negative' = 'neutral';
-
-      if (qScore > 0 && q.explanation_positive?.trim()) {
-        text = q.explanation_positive.trim();
-        type = 'positive';
-      } else if (qScore < 0 && q.explanation_negative?.trim()) {
-        text = q.explanation_negative.trim();
-        type = 'negative';
-      } else if (q.explanation_neutral?.trim()) {
-        text = q.explanation_neutral.trim();
-        type = 'neutral';
-      }
-
-      // Only push if there's actually a text set by the content manager
-      if (text && explanationsBuckets[ct.slug] !== undefined) {
-        explanationsBuckets[ct.slug].push({ text, type });
-      }
     });
   });
 

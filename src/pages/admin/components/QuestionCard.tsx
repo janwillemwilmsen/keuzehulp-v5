@@ -2,36 +2,6 @@ import { useState } from 'react';
 import { adminService } from '@/services/admin';
 import ScoringMatrix from './ScoringMatrix';
 
-const EXPLANATION_FIELDS = [
-  {
-    key: 'explanation_positive',
-    label: '✅ Positief',
-    placeholder: 'Uitleg wanneer dit contract goed past bij dit antwoord…',
-    border: 'border-green-200',
-    bg: 'bg-green-50/60',
-    ring: 'focus:ring-green-400',
-    text: 'text-green-700',
-  },
-  {
-    key: 'explanation_neutral',
-    label: '🟡 Neutraal',
-    placeholder: 'Uitleg wanneer dit contract redelijk past…',
-    border: 'border-yellow-200',
-    bg: 'bg-yellow-50/60',
-    ring: 'focus:ring-yellow-400',
-    text: 'text-yellow-700',
-  },
-  {
-    key: 'explanation_negative',
-    label: '❌ Aandachtspunt',
-    placeholder: 'Uitleg wanneer dit contract minder goed past…',
-    border: 'border-red-200',
-    bg: 'bg-red-50/60',
-    ring: 'focus:ring-red-400',
-    text: 'text-red-700',
-  },
-] as const;
-
 const TYPE_OPTIONS = [
   { value: 'single',   label: 'Enkelvoudig (1 antwoord)',         hint: 'Gebruiker kiest één optie' },
   { value: 'multiple', label: 'Meervoudig (meerdere antwoorden)', hint: 'Gebruiker kiest meerdere opties' },
@@ -56,12 +26,6 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
     try {
       await adminService.updateQuestion(question.id, { type: newType });
     } catch (e) { console.error('Error saving question type', e); }
-  };
-
-  const handleExplanationSave = async (field: string, value: string) => {
-    try {
-      await adminService.updateQuestion(question.id, { [field]: value });
-    } catch (e) { console.error('Error saving explanation', e); }
   };
 
   const handleAddAnswer = async () => {
@@ -155,34 +119,6 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
             </button>
           </div>
         </>
-      )}
-
-      {/* Question-level explanations — always visible except for open questions */}
-      {!isOpen && (
-        <div className="p-4 space-y-3 bg-muted/5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-            Uitleg voor deze vraag (getoond op de resultatenpagina)
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {EXPLANATION_FIELDS.map(f => (
-              <div key={f.key} className="space-y-1">
-                <label className={`text-xs font-bold tracking-wide ${f.text}`}>{f.label}</label>
-                <textarea
-                  defaultValue={question[f.key] ?? ''}
-                  onBlur={e => {
-                    const val = e.target.value;
-                    if (val !== (question[f.key] ?? '')) {
-                      handleExplanationSave(f.key, val);
-                    }
-                  }}
-                  placeholder={f.placeholder}
-                  rows={3}
-                  className={`w-full p-2 border ${f.border} ${f.bg} rounded text-xs resize-none focus:ring-1 ${f.ring} outline-none placeholder:opacity-40`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
     </div>

@@ -50,9 +50,6 @@ CREATE TABLE IF NOT EXISTS public.questions (
     text TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('single', 'multiple', 'open')),
     order_index INTEGER NOT NULL DEFAULT 0,
-    explanation_positive TEXT, -- shown when user's score for this question favors a contract
-    explanation_neutral  TEXT, -- shown when score is zero / mixed
-    explanation_negative TEXT, -- shown when score goes against a contract
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -65,18 +62,18 @@ CREATE TABLE IF NOT EXISTS public.answers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Answer Scores & Trust Calibration Explanations
--- explanation_type matches the spec: 'positive', 'neutral', 'negative'
+-- Answer Scores & Rationale
+-- One row per (answer, contract_type). The visual sentiment
+-- (positive / neutral / negative) is derived from the sign of `score`
+-- at read time, so it never drifts from what the admin actually configured.
 CREATE TABLE IF NOT EXISTS public.answer_scores (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     answer_id UUID REFERENCES public.answers(id) ON DELETE CASCADE,
     contract_type_id UUID REFERENCES public.contract_types(id) ON DELETE CASCADE,
     score INTEGER NOT NULL DEFAULT 0,
-    explanation_text TEXT,
-    explanation_type TEXT NOT NULL DEFAULT 'neutral' CHECK (explanation_type IN ('positive', 'neutral', 'negative')),
+    explanation_text TEXT, -- rationale: why this answer makes this contract (un)suitable
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    -- One row per (answer, contract_type, status) → up to 3 rows per cell
-    UNIQUE(answer_id, contract_type_id, explanation_type)
+    UNIQUE(answer_id, contract_type_id)
 );
 
 -- ============================================================
