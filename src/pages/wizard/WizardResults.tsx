@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { calculateResults } from '@/services/calculator';
 
 export default function WizardResults() {
-  const { id } = useParams();
+  useParams();
   const navigate = useNavigate();
   const { supplierPrefix, answers, questionnaireData, loadingData } = useWizard();
   

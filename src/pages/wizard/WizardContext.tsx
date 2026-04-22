@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { adminService } from '@/services/admin';
-import { ContractType } from '@/types/contract';
 
 interface WizardState {
   questionnaireId: string | null;

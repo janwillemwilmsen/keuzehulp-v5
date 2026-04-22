@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 // Helper to handle API results
-const handleApiResult = async (promise: Promise<any>) => {
+const handleApiResult = async (promise: PromiseLike<any>) => {
   const { data, error } = await promise;
   if (error) throw error;
   return data;
