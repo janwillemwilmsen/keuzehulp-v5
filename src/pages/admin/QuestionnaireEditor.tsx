@@ -42,7 +42,7 @@ export default function QuestionnaireEditor() {
     }
   };
 
-  const handleUpdateMeta = async (field: string, value: string) => {
+  const handleUpdateMeta = async (field: string, value: string | boolean) => {
     if (!data) return;
     setData({ ...data, [field]: value });
     try {
@@ -144,6 +144,24 @@ export default function QuestionnaireEditor() {
             className="w-full p-2 border rounded-md"
           />
         </div>
+
+        {/* Debug toggle — shows the scoring breakdown on the results page */}
+        <label className="flex items-start gap-3 pt-2 border-t cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={!!data.show_debug}
+            onChange={e => handleUpdateMeta('show_debug', e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+          />
+          <span className="text-sm">
+            <span className="font-medium">Debug-modus: toon rekenlogica op de resultatenpagina</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Laat voor elke vraag en elk contracttype de ruwe scores, min/max-bereik,
+              basispercentage, fijnafstemming en eindpercentage zien. Alleen zichtbaar
+              zolang deze optie aan staat — handig tijdens het ijken van de scorematrix.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="flex items-center justify-between mt-12 mb-4">

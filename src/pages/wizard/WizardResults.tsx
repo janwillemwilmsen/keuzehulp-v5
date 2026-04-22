@@ -1,18 +1,20 @@
 import { useWizard } from './WizardContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
-import { calculateResults } from '@/services/calculator';
+import { calculateResultsDebug, ResultsTrace } from '@/services/calculator';
 
 export default function WizardResults() {
   useParams();
   const navigate = useNavigate();
   const { supplierPrefix, answers, questionnaireData, scoringSettings, loadingData } = useWizard();
-  
-  const themeClass = supplierPrefix === 'essent' ? 'theme-essent' : 'theme-energiedirect';
 
-  const ranking = useMemo(() => {
-    if (!questionnaireData) return [];
-    return calculateResults(questionnaireData, answers, scoringSettings);
+  const themeClass = supplierPrefix === 'essent' ? 'theme-essent' : 'theme-energiedirect';
+  const showDebug = !!questionnaireData?.show_debug;
+
+  const { ranking, trace } = useMemo(() => {
+    if (!questionnaireData) return { ranking: [], trace: null as ResultsTrace | null };
+    const out = calculateResultsDebug(questionnaireData, answers, scoringSettings);
+    return { ranking: out.results, trace: out.trace };
   }, [questionnaireData, answers, scoringSettings]);
 
   const winner = ranking[0];
@@ -44,7 +46,7 @@ export default function WizardResults() {
 
   return (
     <div className={`min-h-screen p-4 bg-muted/20 ${themeClass}`}>
-      <div className="max-w-2xl w-full mx-auto my-8 space-y-6">
+      <div className={`w-full mx-auto my-8 space-y-6 ${showDebug ? 'max-w-5xl' : 'max-w-2xl'}`}>
 
         {/* Header */}
         <div className="text-center pt-4 pb-2">
@@ -153,7 +155,155 @@ export default function WizardResults() {
           </button>
         )}
 
+        {/* Debug Panel — only when show_debug is on for this questionnaire */}
+        {showDebug && trace && <DebugPanel trace={trace} />}
+
       </div>
     </div>
+  );
+}
+
+// ─── Debug Panel ──────────────────────────────────────────────────────────────
+// Only rendered when a questionnaire has show_debug = true. Shows every
+// intermediate value the scoring engine produced so editors can audit and
+// tune the matrix without guessing.
+
+function DebugPanel({ trace }: { trace: ResultsTrace }) {
+  const contracts = trace.perContract;
+
+  return (
+    <section className="mt-10 rounded-2xl border-2 border-dashed border-primary/40 bg-background shadow-sm overflow-hidden">
+      <header className="px-6 py-4 border-b bg-primary/5 flex items-center gap-3">
+        <span className="inline-block text-[10px] font-bold tracking-widest uppercase bg-primary text-primary-foreground px-2 py-0.5 rounded">
+          Debug
+        </span>
+        <h2 className="font-bold">Rekenlogica</h2>
+        <span className="text-xs text-muted-foreground">
+          (alleen zichtbaar zolang "Debug-modus" aanstaat in de CMS)
+        </span>
+      </header>
+
+      <div className="divide-y">
+
+        {/* Settings used */}
+        <div className="px-6 py-4">
+          <h3 className="font-semibold text-sm mb-2">Gebruikte parameters</h3>
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs font-mono">
+            {Object.entries(trace.settings).map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-2 border-b border-dashed border-border/50 py-0.5">
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="font-semibold">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        {/* Per-contract summary */}
+        <div className="px-6 py-4 overflow-x-auto">
+          <h3 className="font-semibold text-sm mb-2">Per contracttype</h3>
+          <table className="w-full text-xs font-mono border-collapse">
+            <thead>
+              <tr className="text-left text-muted-foreground border-b">
+                <th className="py-1 pr-3">Contract</th>
+                <th className="py-1 px-3 text-right">Ruw</th>
+                <th className="py-1 px-3 text-right">Min</th>
+                <th className="py-1 px-3 text-right">Max</th>
+                <th className="py-1 px-3 text-right" title="Ongeclampeerd">Basis %</th>
+                <th className="py-1 px-3 text-right" title="Na min-floor en 100% cap">Basis (clamp)</th>
+                <th className="py-1 px-3 text-right" title="+pos / ~neu / -neg">Sentiment</th>
+                <th className="py-1 px-3 text-right">Aanpassing</th>
+                <th className="py-1 px-3 text-right">Plafond</th>
+                <th className="py-1 pl-3 text-right font-bold">Eind %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map(c => (
+                <tr key={c.slug} className="border-b border-border/50 hover:bg-muted/20">
+                  <td className="py-1 pr-3 font-semibold">{c.name}</td>
+                  <td className="py-1 px-3 text-right">{c.rawScore}</td>
+                  <td className="py-1 px-3 text-right text-muted-foreground">{c.minScore}</td>
+                  <td className="py-1 px-3 text-right text-muted-foreground">{c.maxScore}</td>
+                  <td className="py-1 px-3 text-right">{c.basePercentageRaw.toFixed(1)}</td>
+                  <td className="py-1 px-3 text-right">{c.basePercentage.toFixed(1)}</td>
+                  <td className="py-1 px-3 text-right">
+                    <span className="text-green-700">+{c.positiveCount}</span>{' '}
+                    <span className="text-yellow-700">~{c.neutralCount}</span>{' '}
+                    <span className="text-red-700">-{c.negativeCount}</span>
+                  </td>
+                  <td className={`py-1 px-3 text-right ${c.adjustment > 0 ? 'text-green-700' : c.adjustment < 0 ? 'text-red-700' : ''}`}>
+                    {c.adjustment > 0 ? '+' : ''}{c.adjustment.toFixed(2)}pp
+                  </td>
+                  <td className="py-1 px-3 text-right text-muted-foreground">{c.ceilingApplied}</td>
+                  <td className="py-1 pl-3 text-right font-bold">{c.finalPercentage}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Per-question breakdown */}
+        <div className="px-6 py-4 overflow-x-auto">
+          <h3 className="font-semibold text-sm mb-2">Per vraag</h3>
+
+          {trace.questions.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Geen vragen gevonden.</p>
+          ) : (
+            <div className="space-y-5">
+              {trace.questions.map((q, idx) => (
+                <div key={q.id} className="border rounded-md p-3 bg-muted/10">
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-xs font-mono text-muted-foreground">Q{idx + 1}</span>
+                    <span className="font-semibold text-sm">{q.text || <em>(geen tekst)</em>}</span>
+                    <span className="text-[10px] uppercase tracking-wider bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                      {q.type}
+                    </span>
+                  </div>
+
+                  <div className="text-xs mb-2">
+                    <span className="text-muted-foreground">Gekozen: </span>
+                    {q.chosenAnswers.length === 0 ? (
+                      <em className="text-muted-foreground">niets</em>
+                    ) : (
+                      q.chosenAnswers.map(a => (
+                        <span key={a.id} className="inline-block mr-2 bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                          {a.text || '(leeg)'}
+                        </span>
+                      ))
+                    )}
+                  </div>
+
+                  <table className="w-full text-xs font-mono border-collapse">
+                    <thead>
+                      <tr className="text-left text-muted-foreground border-b">
+                        <th className="py-1 pr-3">Contract</th>
+                        <th className="py-1 px-3 text-right" title="Laagst haalbare score voor deze vraag">Min</th>
+                        <th className="py-1 px-3 text-right" title="Hoogst haalbare score voor deze vraag">Max</th>
+                        <th className="py-1 pl-3 text-right font-bold">Bijdrage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {q.perContract.map(pc => {
+                        const name = trace.contractTypes.find(c => c.slug === pc.slug)?.name ?? pc.slug;
+                        return (
+                          <tr key={pc.slug} className="border-b border-border/30">
+                            <td className="py-0.5 pr-3">{name}</td>
+                            <td className="py-0.5 px-3 text-right text-muted-foreground">{pc.questionMin}</td>
+                            <td className="py-0.5 px-3 text-right text-muted-foreground">{pc.questionMax}</td>
+                            <td className={`py-0.5 pl-3 text-right font-bold ${pc.contribution > 0 ? 'text-green-700' : pc.contribution < 0 ? 'text-red-700' : 'text-muted-foreground'}`}>
+                              {pc.contribution > 0 ? '+' : ''}{pc.contribution}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </section>
   );
 }

@@ -33,7 +33,7 @@ export const adminService = {
   getQuestionnaireFull: async (id: string) => {
     return handleApiResult(
       supabase.from('questionnaires').select(`
-        *,
+        id, title, intro_text, usps, supplier_id, is_published, show_debug, created_at,
         suppliers (
           id, name, slug,
           supplier_contract_types (

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.questionnaires (
     usps TEXT[],
     supplier_id UUID REFERENCES public.suppliers(id) ON DELETE CASCADE,
     is_published BOOLEAN DEFAULT true,  -- Direct save, no drafts
+    show_debug BOOLEAN NOT NULL DEFAULT FALSE, -- shows scoring breakdown on the results page
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
