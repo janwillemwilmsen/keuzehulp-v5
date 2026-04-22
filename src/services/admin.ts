@@ -61,6 +61,11 @@ export const adminService = {
     return handleApiResult(supabase.from('questionnaires').update(payload).eq('id', id));
   },
 
+  // Delete questionnaire (cascades to questions, answers, scores)
+  deleteQuestionnaire: async (id: string) => {
+    return handleApiResult(supabase.from('questionnaires').delete().eq('id', id));
+  },
+
   // Questions
   addQuestion: async (questionnaire_id: string, text: string, type: string = 'single') => {
     return handleApiResult(

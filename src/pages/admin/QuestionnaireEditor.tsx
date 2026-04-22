@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { adminService } from '@/services/admin';
 import QuestionCard from './components/QuestionCard';
 
@@ -14,10 +14,11 @@ function getSupplierContractTypes(data: any): any[] {
 
 export default function QuestionnaireEditor() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  // Derive supplier contract types from embedded join data (supplier-aware, no separate fetch)
   const contractTypes = data ? getSupplierContractTypes(data) : [];
 
   useEffect(() => {
@@ -27,8 +28,12 @@ export default function QuestionnaireEditor() {
   const loadData = async (uid: string) => {
     try {
       setLoading(true);
-      const qData = await adminService.getQuestionnaireFull(uid);
+      const [qData, suppliersData] = await Promise.all([
+        adminService.getQuestionnaireFull(uid),
+        adminService.getSuppliers(),
+      ]);
       setData(qData);
+      setSuppliers(suppliersData || []);
     } catch (e) {
       console.error(e);
       alert('Error inladen data');
@@ -39,11 +44,14 @@ export default function QuestionnaireEditor() {
 
   const handleUpdateMeta = async (field: string, value: string) => {
     if (!data) return;
-    setData({ ...data, [field]: value }); // optimistic
-    // "Save is directly live" - directly API
+    setData({ ...data, [field]: value });
     try {
       setSaving(true);
       await adminService.updateQuestionnaire(data.id, { [field]: value });
+      // If supplier changed, reload to get the new contract types
+      if (field === 'supplier_id') {
+        await loadData(data.id);
+      }
     } catch(e) { console.error(e) } finally { setSaving(false) }
   };
 
@@ -66,11 +74,39 @@ export default function QuestionnaireEditor() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
-      <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
+      <div className="flex items-center text-sm text-muted-foreground mb-4">
         <Link to="/admin" className="hover:text-foreground">← Terug naar overzicht</Link>
-        <span>/</span>
+        <span className="mx-2">/</span>
         <span className="font-medium text-foreground">Editor</span>
-        {saving && <span className="ml-auto text-primary">Opslaan...</span>}
+        {saving && <span className="ml-4 text-primary">Opslaan...</span>}
+
+        {/* Right-aligned actions */}
+        <div className="ml-auto flex items-center gap-3">
+          <a
+            href={`/keuzehulp/${data.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
+            ↗ Preview keuzehulp
+          </a>
+          <button
+            onClick={async () => {
+              if (window.confirm('Weet je zeker dat je deze keuzehulp wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
+                try {
+                  await adminService.deleteQuestionnaire(data.id);
+                  navigate('/admin');
+                } catch (e) {
+                  console.error(e);
+                  alert('Verwijderen mislukt');
+                }
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-destructive text-destructive text-xs font-semibold hover:bg-destructive hover:text-destructive-foreground transition-colors"
+          >
+            Verwijderen
+          </button>
+        </div>
       </div>
 
       {/* Meta Editor */}
@@ -92,9 +128,10 @@ export default function QuestionnaireEditor() {
               onChange={e => handleUpdateMeta('supplier_id', e.target.value)}
               className="w-full p-2 border rounded-md bg-background"
             >
-               {data.suppliers && (
-                 <option value={data.supplier_id}>{data.suppliers.name}</option>
-               )}
+              <option value="" disabled>Kies leverancier…</option>
+              {suppliers.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
             </select>
           </div>
         </div>
