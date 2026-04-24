@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWizard } from './WizardContext';
+import { brandThemeStyle } from './brandTheme';
 
 export default function WizardStep() {
   const { id, questionIndex } = useParams();
   const navigate = useNavigate();
-  const { supplierPrefix, setAnswer, answers, questionnaireData, loadingData } = useWizard();
+  const { setAnswer, answers, questionnaireData, loadingData } = useWizard();
 
   if (loadingData || !questionnaireData) {
     return <div className="min-h-screen flex items-center justify-center">Laden...</div>;
@@ -23,7 +24,7 @@ export default function WizardStep() {
     return null;
   }
 
-  const themeClass = supplierPrefix === 'essent' ? 'theme-essent' : 'theme-energiedirect';
+  const themeStyle = brandThemeStyle(questionnaireData.suppliers);
   const isMultiple = question.type === 'multiple';
   const isOpen     = question.type === 'open';
 
@@ -66,7 +67,7 @@ export default function WizardStep() {
   );
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 bg-muted/20 ${themeClass}`}>
+    <div style={themeStyle} className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="max-w-xl w-full rounded-2xl border bg-card p-8 shadow-sm">
 
         {/* Progress */}
@@ -77,7 +78,9 @@ export default function WizardStep() {
           </span>
         </div>
 
-        <h2 className="text-2xl font-bold mb-8 text-foreground">{question.text}</h2>
+        <h2 className="text-2xl font-bold mb-8" style={{ color: 'var(--brand-title, var(--foreground))' }}>
+          {question.text}
+        </h2>
 
         {/* ── Open question ── */}
         {isOpen && (

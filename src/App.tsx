@@ -4,6 +4,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionnaireEditor from './pages/admin/QuestionnaireEditor';
 import ScoringRules from './pages/admin/ScoringRules';
 import ContractTypesEditor from './pages/admin/ContractTypesEditor';
+import BrandThemes from './pages/admin/BrandThemes';
 import Login from './pages/admin/Login';
 import WizardEntry from './pages/wizard/WizardEntry';
 import WizardStep from './pages/wizard/WizardStep';
@@ -58,6 +59,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ContractTypesEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/brand-themes"
+            element={
+              <ProtectedRoute>
+                <BrandThemes />
               </ProtectedRoute>
             }
           />

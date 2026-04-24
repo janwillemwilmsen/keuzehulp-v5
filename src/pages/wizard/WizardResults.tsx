@@ -2,13 +2,14 @@ import { useWizard } from './WizardContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { calculateResultsDebug, ContractResult, ResultsTrace } from '@/services/calculator';
+import { brandThemeStyle } from './brandTheme';
 
 export default function WizardResults() {
   useParams();
   const navigate = useNavigate();
-  const { supplierPrefix, answers, questionnaireData, scoringSettings, loadingData } = useWizard();
+  const { answers, questionnaireData, scoringSettings, loadingData } = useWizard();
 
-  const themeClass = supplierPrefix === 'essent' ? 'theme-essent' : 'theme-energiedirect';
+  const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
   const showDebug = !!questionnaireData?.show_debug;
 
   const { ranking, trace } = useMemo(() => {
@@ -28,7 +29,7 @@ export default function WizardResults() {
 
   if (loadingData) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${themeClass}`}>
+      <div style={themeStyle} className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-2">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Advies berekenen...</p>
@@ -52,12 +53,14 @@ export default function WizardResults() {
   }
 
   return (
-    <div className={`min-h-screen p-4 bg-muted/20 ${themeClass}`}>
+    <div style={themeStyle} className="min-h-screen p-4 bg-background">
       <div className={`w-full mx-auto my-8 space-y-6 ${showDebug ? 'max-w-5xl' : 'max-w-2xl'}`}>
 
         {/* Header */}
         <div className="text-center pt-4 pb-2">
-          <h1 className="text-3xl font-extrabold text-primary mb-2">Jouw Persoonlijke Advies</h1>
+          <h1 className="text-3xl font-extrabold mb-2" style={{ color: 'var(--brand-title, var(--primary))' }}>
+            Jouw Persoonlijke Advies
+          </h1>
           <p className="text-muted-foreground">
             Op basis van jouw antwoorden hebben we berekend welk contract het beste bij je past.
           </p>

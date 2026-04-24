@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS public.suppliers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL UNIQUE,
     slug TEXT NOT NULL UNIQUE,
+    -- Brand colors injected as CSS variables on the wizard pages.
+    -- Managed from /admin/brand-themes.
+    color_background         TEXT NOT NULL DEFAULT '#ffffff',
+    color_primary            TEXT NOT NULL DEFAULT '#111111',
+    color_primary_foreground TEXT NOT NULL DEFAULT '#ffffff',
+    color_title              TEXT NOT NULL DEFAULT '#111111',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

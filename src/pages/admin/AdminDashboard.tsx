@@ -58,6 +58,12 @@ export default function AdminDashboard() {
             Contracttypes
           </Link>
           <Link
+            to="/admin/brand-themes"
+            className="px-4 py-2 rounded-md font-medium border border-border bg-background hover:bg-muted text-sm"
+          >
+            Brandkleuren
+          </Link>
+          <Link
             to="/admin/scoring-rules"
             className="px-4 py-2 rounded-md font-medium border border-border bg-background hover:bg-muted text-sm"
           >

@@ -52,11 +52,15 @@ export const adminService = {
   // Fetch Full Questionnaire Graph (Deep relational query).
   // Loads the per-questionnaire contract types so the editor + wizard
   // know exactly which contract types are in scope for THIS questionnaire.
+  // Also pulls the supplier's brand colors so the wizard can theme itself.
   getQuestionnaireFull: async (id: string) => {
     return handleApiResult(
       supabase.from('questionnaires').select(`
         id, title, intro_text, usps, supplier_id, is_published, show_debug, created_at,
-        suppliers ( id, name, slug ),
+        suppliers (
+          id, name, slug,
+          color_background, color_primary, color_primary_foreground, color_title
+        ),
         questionnaire_contract_types (
           contract_types ( id, slug, name, description, order_index )
         ),
@@ -134,7 +138,24 @@ export const adminService = {
   
   // Helpers
   getSuppliers: async () => {
-    return handleApiResult(supabase.from('suppliers').select('*'));
+    return handleApiResult(supabase.from('suppliers').select('*').order('name'));
+  },
+
+  // Edit a supplier — used by the brand-themes admin page to persist
+  // per-brand colors (background, primary, primary-foreground, title).
+  updateSupplier: async (
+    id: string,
+    payload: Partial<{
+      name: string;
+      color_background: string;
+      color_primary: string;
+      color_primary_foreground: string;
+      color_title: string;
+    }>
+  ) => {
+    return handleApiResult(
+      supabase.from('suppliers').update(payload).eq('id', id).select().single()
+    );
   },
 
   getContractTypes: async () => {

@@ -1,28 +1,29 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWizard } from './WizardContext';
+import { brandThemeStyle } from './brandTheme';
 
 export default function WizardEntry() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { loadQuestionnaire, supplierPrefix, questionnaireData, loadingData } = useWizard();
-  
+  const { loadQuestionnaire, questionnaireData, loadingData } = useWizard();
+
   useEffect(() => {
     // Determine the supplier styling dynamically if we can (for now fallback from id or just 'essent')
     const mockSupplier = id?.includes('direct') ? 'energiedirect' : 'essent';
     if (id) loadQuestionnaire(id, mockSupplier);
   }, [id, loadQuestionnaire]);
 
-  const themeClass = supplierPrefix === 'essent' ? 'theme-essent' : 'theme-energiedirect';
+  const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
 
   if (loadingData || !questionnaireData) {
-     return <div className={`min-h-screen flex items-center justify-center ${themeClass}`}>Laden...</div>;
+     return <div style={themeStyle} className="min-h-screen flex items-center justify-center bg-background">Laden...</div>;
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 bg-background ${themeClass}`}>
+    <div style={themeStyle} className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="max-w-md w-full rounded-2xl border bg-card p-8 shadow-sm text-center">
-        <h1 className="text-3xl font-extrabold mb-4 text-foreground">
+        <h1 className="text-3xl font-extrabold mb-4" style={{ color: 'var(--brand-title, var(--foreground))' }}>
           {questionnaireData.title || 'Klaar voor persoonlijk advies?'}
         </h1>
         <p className="text-muted-foreground mb-8 text-lg">
