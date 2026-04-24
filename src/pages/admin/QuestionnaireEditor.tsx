@@ -3,10 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { adminService } from '@/services/admin';
 import QuestionCard from './components/QuestionCard';
 
-// Extracts ordered contract types from the supplier's junction table
-function getSupplierContractTypes(data: any): any[] {
-  const sct = data?.suppliers?.supplier_contract_types ?? [];
-  return sct
+// Extracts ordered contract types from the per-questionnaire junction table.
+// Order is driven by contract_types.order_index so the canonical order
+// (Variabel | Vast 1 jaar | Vast 2 jaar | Vast 3 jaar | Dynamisch | Time of Use)
+// is preserved everywhere without us having to hardcode it here.
+function getQuestionnaireContractTypes(data: any): any[] {
+  const qct = data?.questionnaire_contract_types ?? [];
+  return qct
     .map((row: any) => row.contract_types)
     .filter(Boolean)
     .sort((a: any, b: any) => (a.order_index ?? 99) - (b.order_index ?? 99));
@@ -17,9 +20,11 @@ export default function QuestionnaireEditor() {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [allContractTypes, setAllContractTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const contractTypes = data ? getSupplierContractTypes(data) : [];
+  const contractTypes = data ? getQuestionnaireContractTypes(data) : [];
+  const enabledContractIds = new Set<string>(contractTypes.map((c: any) => c.id));
 
   useEffect(() => {
     if (id) loadData(id);
@@ -28,12 +33,14 @@ export default function QuestionnaireEditor() {
   const loadData = async (uid: string) => {
     try {
       setLoading(true);
-      const [qData, suppliersData] = await Promise.all([
+      const [qData, suppliersData, ctData] = await Promise.all([
         adminService.getQuestionnaireFull(uid),
         adminService.getSuppliers(),
+        adminService.getContractTypes(),
       ]);
       setData(qData);
       setSuppliers(suppliersData || []);
+      setAllContractTypes(ctData || []);
     } catch (e) {
       console.error(e);
       alert('Error inladen data');
@@ -48,11 +55,28 @@ export default function QuestionnaireEditor() {
     try {
       setSaving(true);
       await adminService.updateQuestionnaire(data.id, { [field]: value });
-      // If supplier changed, reload to get the new contract types
-      if (field === 'supplier_id') {
-        await loadData(data.id);
-      }
     } catch(e) { console.error(e) } finally { setSaving(false) }
+  };
+
+  // Toggle one contract type on/off for this questionnaire.
+  // We optimistically update local state first, then persist.
+  const handleToggleContractType = async (ct: any, enabled: boolean) => {
+    if (!data) return;
+    const current: any[] = data.questionnaire_contract_types ?? [];
+    const next = enabled
+      ? [...current.filter((r: any) => r.contract_types?.id !== ct.id), { contract_types: ct }]
+      : current.filter((r: any) => r.contract_types?.id !== ct.id);
+    setData({ ...data, questionnaire_contract_types: next });
+    try {
+      setSaving(true);
+      await adminService.setQuestionnaireContractType(data.id, ct.id, enabled);
+    } catch (e) {
+      console.error(e);
+      alert('Opslaan contracttype mislukt');
+      await loadData(data.id);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleAddQuestion = async () => {
@@ -143,6 +167,55 @@ export default function QuestionnaireEditor() {
             onChange={e => handleUpdateMeta('intro_text', e.target.value)}
             className="w-full p-2 border rounded-md"
           />
+        </div>
+
+        {/* Contract types — which contracts are in scope for THIS questionnaire.
+             Order is driven by contract_types.order_index, so the canonical
+             sequence (Variabel | Vast 1 jaar | Vast 2 jaar | Vast 3 jaar |
+             Dynamisch | Time of Use) is preserved automatically. */}
+        <div className="pt-4 border-t">
+          <div className="flex items-baseline justify-between mb-2">
+            <label className="block text-sm font-medium">Contracttypes</label>
+            <span className="text-xs text-muted-foreground">
+              Kies welke contracten in de matrix en het advies verschijnen
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {allContractTypes
+              .slice()
+              .sort((a: any, b: any) => (a.order_index ?? 99) - (b.order_index ?? 99))
+              .map((ct: any) => {
+                const checked = enabledContractIds.has(ct.id);
+                return (
+                  <label
+                    key={ct.id}
+                    className={`flex items-start gap-2 p-2.5 rounded-md border cursor-pointer select-none transition-colors ${
+                      checked
+                        ? 'border-primary/60 bg-primary/5'
+                        : 'border-border hover:border-primary/40 bg-background'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={e => handleToggleContractType(ct, e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+                    />
+                    <span className="text-sm leading-tight">
+                      <span className="font-medium block">{ct.name}</span>
+                      {ct.description && (
+                        <span className="text-xs text-muted-foreground">{ct.description}</span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+          </div>
+          {contractTypes.length === 0 && (
+            <p className="text-xs text-destructive mt-2">
+              Er is nog geen enkel contracttype aangevinkt — de scorematrix en het advies blijven leeg tot je er minstens één kiest.
+            </p>
+          )}
         </div>
 
         {/* Debug toggle — shows the scoring breakdown on the results page */}

@@ -52,6 +52,12 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Link
+            to="/admin/contract-types"
+            className="px-4 py-2 rounded-md font-medium border border-border bg-background hover:bg-muted text-sm"
+          >
+            Contracttypes
+          </Link>
+          <Link
             to="/admin/scoring-rules"
             className="px-4 py-2 rounded-md font-medium border border-border bg-background hover:bg-muted text-sm"
           >

@@ -11,6 +11,9 @@
 export interface ContractResult {
   slug: string;
   name: string;
+  // Long-form customer-facing copy maintained in /admin/contract-types.
+  // Shown on the results page in the "Uitleg" modal.
+  description: string | null;
   percentage: number;
   explanations: {
     text: string;
@@ -81,25 +84,58 @@ export interface ResultsTrace {
 }
 
 /**
- * Collects all unique contract types from the loaded questionnaire data
- * (from the answer_scores → contract_types join). This is supplier-aware:
- * only contract types that actually appear in any answer_score row will
- * be included, which automatically reflects what the CMS has configured.
+ * Collects the contract types that are in scope for a questionnaire.
+ *
+ * Prefers the per-questionnaire `questionnaire_contract_types` list when
+ * it is present (new model — admin explicitly picks which contracts appear).
+ * Falls back to scanning `answer_scores` for older data that predates
+ * the junction table. Either way, the result is sorted by
+ * `contract_types.order_index` so the canonical order is preserved:
+ * Variabel | Vast 1 jaar | Vast 2 jaar | Vast 3 jaar | Dynamisch | Time of Use.
  */
-export function collectContractTypes(questions: any[]): { slug: string; name: string; order_index: number }[] {
-  const seen = new Map<string, { name: string; order_index: number }>();
+export function collectContractTypes(
+  questionsOrData: any,
+): { slug: string; name: string; description: string | null; order_index: number }[] {
+  // Accept either a full questionnaireData object or the bare questions array
+  // so existing callers passing `questions` keep working.
+  const questionnaireData =
+    Array.isArray(questionsOrData) ? { questions: questionsOrData } : (questionsOrData ?? {});
+  const questions: any[] = questionnaireData.questions ?? [];
+
+  const qct = questionnaireData.questionnaire_contract_types;
+  if (Array.isArray(qct) && qct.length > 0) {
+    return qct
+      .map((row: any) => row.contract_types)
+      .filter(Boolean)
+      .map((ct: any) => ({
+        slug: ct.slug,
+        name: ct.name ?? ct.slug,
+        description: ct.description ?? null,
+        order_index: ct.order_index ?? 99,
+      }))
+      .sort((a, b) => a.order_index - b.order_index);
+  }
+
+  // Fallback: derive from answer_scores (legacy behaviour).
+  // The answer_scores join doesn't include `description`, so it stays null
+  // until the questionnaire is migrated onto questionnaire_contract_types.
+  const seen = new Map<string, { name: string; description: string | null; order_index: number }>();
   questions.forEach(q => {
     (q.answers || []).forEach((a: any) => {
       (a.answer_scores || []).forEach((s: any) => {
         const ct = s.contract_types;
         if (ct?.slug && !seen.has(ct.slug)) {
-          seen.set(ct.slug, { name: ct.name ?? ct.slug, order_index: ct.order_index ?? 99 });
+          seen.set(ct.slug, {
+            name: ct.name ?? ct.slug,
+            description: ct.description ?? null,
+            order_index: ct.order_index ?? 99,
+          });
         }
       });
     });
   });
   return Array.from(seen.entries())
-    .map(([slug, { name, order_index }]) => ({ slug, name, order_index }))
+    .map(([slug, v]) => ({ slug, ...v }))
     .sort((a, b) => a.order_index - b.order_index);
 }
 
@@ -174,7 +210,8 @@ export function calculateResultsDebug(
   settings: ScoringSettings = DEFAULT_SCORING_SETTINGS
 ): { results: ContractResult[]; trace: ResultsTrace } {
   const questions: any[] = questionnaireData?.questions ?? [];
-  const contractTypes = questions.length === 0 ? [] : collectContractTypes(questions);
+  const contractTypes =
+    questions.length === 0 ? [] : collectContractTypes(questionnaireData);
 
   const emptyTrace: ResultsTrace = {
     settings,
@@ -320,6 +357,7 @@ export function calculateResultsDebug(
     .map(ct => ({
       slug: ct.slug,
       name: ct.name,
+      description: ct.description ?? null,
       percentage: finalPercentages[ct.slug] ?? 0,
       explanations: explanationsBuckets[ct.slug] ?? [],
     }))

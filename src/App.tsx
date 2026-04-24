@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionnaireEditor from './pages/admin/QuestionnaireEditor';
 import ScoringRules from './pages/admin/ScoringRules';
+import ContractTypesEditor from './pages/admin/ContractTypesEditor';
 import Login from './pages/admin/Login';
 import WizardEntry from './pages/wizard/WizardEntry';
 import WizardStep from './pages/wizard/WizardStep';
@@ -49,6 +50,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ScoringRules />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/contract-types"
+            element={
+              <ProtectedRoute>
+                <ContractTypesEditor />
               </ProtectedRoute>
             }
           />

@@ -18,27 +18,47 @@ export const adminService = {
     );
   },
 
-  // Create empty questionnaire
+  // Create empty questionnaire. Seeds the per-questionnaire contract-type
+  // list from whatever the supplier offers, so a fresh questionnaire
+  // behaves identically to the pre-per-questionnaire-override world.
   createQuestionnaire: async (title: string, supplier_id: string) => {
-    return handleApiResult(
+    const created = await handleApiResult(
       supabase.from('questionnaires').insert([{
         title,
         supplier_id,
         is_published: true // the user requested direct save without drafts
       }]).select().single()
     );
+
+    // Seed questionnaire_contract_types from supplier_contract_types.
+    const sct = await handleApiResult(
+      supabase.from('supplier_contract_types')
+        .select('contract_type_id')
+        .eq('supplier_id', supplier_id)
+    );
+    const seedRows = (sct ?? []).map((row: any) => ({
+      questionnaire_id: created.id,
+      contract_type_id: row.contract_type_id,
+    }));
+    if (seedRows.length > 0) {
+      await handleApiResult(
+        supabase.from('questionnaire_contract_types').insert(seedRows)
+      );
+    }
+
+    return created;
   },
 
-  // Fetch Full Questionnaire Graph (Deep relational query)
+  // Fetch Full Questionnaire Graph (Deep relational query).
+  // Loads the per-questionnaire contract types so the editor + wizard
+  // know exactly which contract types are in scope for THIS questionnaire.
   getQuestionnaireFull: async (id: string) => {
     return handleApiResult(
       supabase.from('questionnaires').select(`
         id, title, intro_text, usps, supplier_id, is_published, show_debug, created_at,
-        suppliers (
-          id, name, slug,
-          supplier_contract_types (
-            contract_types ( id, slug, name, description, order_index )
-          )
+        suppliers ( id, name, slug ),
+        questionnaire_contract_types (
+          contract_types ( id, slug, name, description, order_index )
         ),
         questions (
           id, text, type, order_index,
@@ -120,6 +140,43 @@ export const adminService = {
   getContractTypes: async () => {
     return handleApiResult(
       supabase.from('contract_types').select('*').order('order_index', { ascending: true })
+    );
+  },
+
+  // Edit an individual contract type. Primarily used to maintain the
+  // customer-facing "Uitleg" description shown on the wizard results page.
+  updateContractType: async (
+    id: string,
+    payload: { name?: string; description?: string | null }
+  ) => {
+    return handleApiResult(
+      supabase.from('contract_types').update(payload).eq('id', id).select().single()
+    );
+  },
+
+  // Toggle whether a given contract type is active for a questionnaire.
+  // Insert when enabling, delete when disabling — order is preserved
+  // at read time via contract_types.order_index, so we never store it here.
+  setQuestionnaireContractType: async (
+    questionnaire_id: string,
+    contract_type_id: string,
+    enabled: boolean
+  ) => {
+    if (enabled) {
+      return handleApiResult(
+        supabase
+          .from('questionnaire_contract_types')
+          .upsert({ questionnaire_id, contract_type_id }, {
+            onConflict: 'questionnaire_id, contract_type_id',
+          })
+      );
+    }
+    return handleApiResult(
+      supabase
+        .from('questionnaire_contract_types')
+        .delete()
+        .eq('questionnaire_id', questionnaire_id)
+        .eq('contract_type_id', contract_type_id)
     );
   },
 

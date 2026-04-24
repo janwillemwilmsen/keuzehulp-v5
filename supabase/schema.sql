@@ -44,6 +44,16 @@ CREATE TABLE IF NOT EXISTS public.questionnaires (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Questionnaire <-> Contract Type mapping.
+-- Per-questionnaire override of which contract types are in scope.
+-- Seeded from supplier_contract_types when a questionnaire is created,
+-- but after that admins can toggle types on/off per questionnaire.
+CREATE TABLE IF NOT EXISTS public.questionnaire_contract_types (
+    questionnaire_id UUID REFERENCES public.questionnaires(id) ON DELETE CASCADE,
+    contract_type_id UUID REFERENCES public.contract_types(id) ON DELETE CASCADE,
+    PRIMARY KEY (questionnaire_id, contract_type_id)
+);
+
 -- Questions
 CREATE TABLE IF NOT EXISTS public.questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
