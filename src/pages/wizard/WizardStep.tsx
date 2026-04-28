@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWizard } from './WizardContext';
 import { brandThemeStyle } from './brandTheme';
@@ -28,31 +27,30 @@ export default function WizardStep() {
   const isMultiple = question.type === 'multiple';
   const isOpen     = question.type === 'open';
 
-  // Local state — open questions store a free-text string; others store answer IDs
-  const [localAnswers, setLocalAnswers] = useState<string[]>(
-    answers[question.id] || []
-  );
-  const [openText, setOpenText] = useState<string>(
-    // open answers are stored as the literal text in the array
-    (answers[question.id] || [])[0] ?? ''
-  );
+  // Read straight from the wizard context. The component is reused across
+  // question routes (only the URL param changes), so any local state would
+  // get out of sync with the URL and silently drop selections when the
+  // user navigates back. Treating context as the single source of truth
+  // keeps the UI honest without an extra effect-based sync.
+  const currentAnswers: string[] = answers[question.id] ?? [];
+  const openText: string = isOpen ? (currentAnswers[0] ?? '') : '';
 
   const toggleAnswer = (answerId: string) => {
     if (isMultiple) {
-      setLocalAnswers(prev =>
-        prev.includes(answerId) ? prev.filter(a => a !== answerId) : [...prev, answerId]
-      );
+      const next = currentAnswers.includes(answerId)
+        ? currentAnswers.filter(a => a !== answerId)
+        : [...currentAnswers, answerId];
+      setAnswer(question.id, next);
     } else {
-      setLocalAnswers([answerId]);
+      setAnswer(question.id, [answerId]);
     }
   };
 
+  const handleOpenTextChange = (value: string) => {
+    setAnswer(question.id, value.trim() ? [value] : []);
+  };
+
   const handleNext = () => {
-    if (isOpen) {
-      setAnswer(question.id, openText.trim() ? [openText.trim()] : []);
-    } else {
-      setAnswer(question.id, localAnswers);
-    }
     if (index + 1 < dbQuestions.length) {
       navigate(`/keuzehulp/${id}/q/${index + 2}`);
     } else {
@@ -60,7 +58,9 @@ export default function WizardStep() {
     }
   };
 
-  const canProceed = isOpen ? openText.trim().length > 0 : localAnswers.length > 0;
+  const canProceed = isOpen
+    ? openText.trim().length > 0
+    : currentAnswers.length > 0;
 
   const sortedOptions = (question.answers ?? []).sort(
     (a: any, b: any) => a.order_index - b.order_index
@@ -86,7 +86,7 @@ export default function WizardStep() {
         {isOpen && (
           <textarea
             value={openText}
-            onChange={e => setOpenText(e.target.value)}
+            onChange={e => handleOpenTextChange(e.target.value)}
             placeholder="Typ hier je antwoord…"
             rows={4}
             className="w-full p-4 border-2 border-border/50 rounded-xl text-base text-foreground bg-background focus:border-primary focus:outline-none resize-none mb-8"
@@ -97,7 +97,7 @@ export default function WizardStep() {
         {!isOpen && (
           <div className="space-y-3 mb-8">
             {sortedOptions.map((opt: any) => {
-              const isSelected = localAnswers.includes(opt.id);
+              const isSelected = currentAnswers.includes(opt.id);
               return (
                 <button
                   key={opt.id}
