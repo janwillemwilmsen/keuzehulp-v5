@@ -75,7 +75,7 @@ function ScoreCell({
 
 // ─── Main Matrix ──────────────────────────────────────────────────────────────
 
-export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, onAnswerTextChange }: any) {
+export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, onUpdateAnswer }: any) {
   return (
     <table className="w-full text-sm text-left">
       <thead className="text-xs uppercase bg-muted/50 border-b">
@@ -93,18 +93,31 @@ export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, 
         {[...answers].sort((a: any, b: any) => a.order_index - b.order_index).map((answer: any) => (
           <tr key={answer.id} className="align-top hover:bg-muted/5 transition-colors">
 
-            {/* Answer text */}
-            <td className="px-4 py-3">
+            {/* Answer text + optional helper description */}
+            <td className="px-4 py-3 space-y-1.5">
               <input
-                key={answer.id}
+                key={`${answer.id}-text`}
                 defaultValue={answer.text}
                 onBlur={e => {
                   if (e.target.value !== answer.text) {
-                    onAnswerTextChange(answer.id, e.target.value);
+                    onUpdateAnswer(answer.id, { text: e.target.value });
                   }
                 }}
                 className="w-full font-semibold bg-transparent border-b border-transparent hover:border-muted focus:border-primary focus:outline-none text-sm"
                 placeholder="Antwoord tekst…"
+              />
+              <textarea
+                key={`${answer.id}-desc`}
+                defaultValue={answer.description ?? ''}
+                onBlur={e => {
+                  const next = e.target.value;
+                  if (next !== (answer.description ?? '')) {
+                    onUpdateAnswer(answer.id, { description: next || null });
+                  }
+                }}
+                rows={2}
+                placeholder="Toelichting (optioneel) — getoond onder het antwoord in de wizard"
+                className="w-full text-xs leading-snug text-muted-foreground bg-transparent border border-transparent hover:border-muted focus:border-primary focus:outline-none rounded p-1 resize-none placeholder:italic placeholder:opacity-60"
               />
             </td>
 

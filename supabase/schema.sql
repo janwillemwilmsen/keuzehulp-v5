@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS public.answers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     question_id UUID REFERENCES public.questions(id) ON DELETE CASCADE,
     text TEXT NOT NULL,
+    -- Optional helper copy shown under the answer in the wizard.
+    description TEXT,
     order_index INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

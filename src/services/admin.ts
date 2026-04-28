@@ -67,7 +67,7 @@ export const adminService = {
         questions (
           id, text, type, order_index,
           answers (
-            id, text, order_index,
+            id, text, description, order_index,
             answer_scores (
               id, contract_type_id, score, explanation_text,
               contract_types ( id, slug, name, order_index )

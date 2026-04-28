@@ -44,9 +44,9 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const handleAnswerTextChange = async (aId: string, val: string) => {
+  const handleUpdateAnswer = async (aId: string, payload: Record<string, unknown>) => {
     try {
-      await adminService.updateAnswer(aId, { text: val });
+      await adminService.updateAnswer(aId, payload);
     } catch (e) { console.error(e); }
   };
 
@@ -105,7 +105,7 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
               answers={question.answers || []}
               contractTypes={contractTypes}
               onDeleteAnswer={handleDeleteAnswer}
-              onAnswerTextChange={handleAnswerTextChange}
+              onUpdateAnswer={handleUpdateAnswer}
             />
           </div>
           {/* Add Answer */}

@@ -108,9 +108,9 @@ export default function WizardStep() {
                       : 'border-border/50 hover:border-primary/50 text-foreground'
                     }`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     {/* Radio circle for single; checkbox square for multiple */}
-                    <div className={`shrink-0 w-5 h-5 border-2 flex items-center justify-center
+                    <div className={`shrink-0 mt-0.5 w-5 h-5 border-2 flex items-center justify-center
                       ${isMultiple ? 'rounded-md' : 'rounded-full'}
                       ${isSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}
                     >
@@ -120,7 +120,14 @@ export default function WizardStep() {
                           : <div className="w-2 h-2 bg-primary-foreground rounded-full" />
                       )}
                     </div>
-                    <span className="font-medium text-base">{opt.text}</span>
+                    <div className="min-w-0">
+                      <span className="font-medium text-base block">{opt.text}</span>
+                      {opt.description && (
+                        <span className={`block text-sm mt-1 leading-snug ${isSelected ? 'text-primary/80' : 'text-muted-foreground'}`}>
+                          {opt.description}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
               );
