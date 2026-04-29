@@ -11,6 +11,10 @@ export default function WizardResults() {
 
   const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
   const showDebug = !!questionnaireData?.show_debug;
+  // When this questionnaire has the "Toon productomschrijving" toggle on,
+  // we replace the rationale bullets with the global contract description
+  // and suppress the "Uitleg" modal link — same copy, no need for both.
+  const useDescriptions = !!questionnaireData?.show_contract_descriptions;
 
   const { ranking, trace } = useMemo(() => {
     if (!questionnaireData) return { ranking: [], trace: null as ResultsTrace | null };
@@ -94,7 +98,7 @@ export default function WizardResults() {
                     <h2 className={`font-extrabold ${isTop ? 'text-2xl text-foreground' : 'text-xl text-muted-foreground'}`}>
                       {contract.name}
                     </h2>
-                    {contract.description && (
+                    {contract.description && !useDescriptions && (
                       <button
                         type="button"
                         onClick={() => setOpenContractSlug(contract.slug)}
@@ -117,53 +121,65 @@ export default function WizardResults() {
                 </div>
               </div>
 
-              {/* Explanations — only shown if there are any */}
-              {(positives.length > 0 || neutrals.length > 0 || negatives.length > 0) && (
-                <div className="p-6 space-y-4 text-sm">
+              {/* Body — either the global product description (when the
+                  questionnaire has show_contract_descriptions on) or the
+                  rationale bullets grouped by sentiment. */}
+              {useDescriptions ? (
+                contract.description && (
+                  <div className="p-6 text-sm">
+                    <p className="whitespace-pre-line leading-relaxed text-foreground">
+                      {contract.description}
+                    </p>
+                  </div>
+                )
+              ) : (
+                (positives.length > 0 || neutrals.length > 0 || negatives.length > 0) && (
+                  <div className="p-6 space-y-4 text-sm">
 
-                  {positives.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">✅ Goed passend</h3>
-                      <ul className="space-y-1.5">
-                        {positives.map((e, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-green-500 mt-0.5 shrink-0">●</span>
-                            <span className="text-foreground">{e.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                    {positives.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">✅ Goed passend</h3>
+                        <ul className="space-y-1.5">
+                          {positives.map((e, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-green-500 mt-0.5 shrink-0">●</span>
+                              <span className="text-foreground">{e.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                  {neutrals.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">🟡 Redelijk passend</h3>
-                      <ul className="space-y-1.5">
-                        {neutrals.map((e, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-yellow-400 mt-0.5 shrink-0">●</span>
-                            <span className="text-foreground">{e.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                    {neutrals.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">🟡 Redelijk passend</h3>
+                        <ul className="space-y-1.5">
+                          {neutrals.map((e, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-yellow-400 mt-0.5 shrink-0">●</span>
+                              <span className="text-foreground">{e.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                  {negatives.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">❌ Houd hier rekening mee</h3>
-                      <ul className="space-y-1.5">
-                        {negatives.map((e, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-red-400 mt-0.5 shrink-0">■</span>
-                            <span className="text-foreground">{e.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                    {negatives.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">❌ Houd hier rekening mee</h3>
+                        <ul className="space-y-1.5">
+                          {negatives.map((e, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-red-400 mt-0.5 shrink-0">■</span>
+                              <span className="text-foreground">{e.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                </div>
+                  </div>
+                )
               )}
             </div>
           );

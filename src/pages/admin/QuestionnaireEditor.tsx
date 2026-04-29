@@ -218,8 +218,28 @@ export default function QuestionnaireEditor() {
           )}
         </div>
 
+        {/* Toggle — swap rationale bullets for the global product description */}
+        <label className="flex items-start gap-3 pt-4 border-t cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={!!data.show_contract_descriptions}
+            onChange={e => handleUpdateMeta('show_contract_descriptions', e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+          />
+          <span className="text-sm">
+            <span className="font-medium">Toon productomschrijving in plaats van onderbouwingen</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Staat dit aan, dan vervangen we op de resultatenpagina de bullet­lijsten
+              (Goed passend / Redelijk passend / Houd hier rekening mee) door de
+              globale uitleg van het contracttype (uit <em>Contracttypes</em>). De
+              "Uitleg"-link bij de contractnaam wordt dan ook verborgen, omdat
+              dezelfde tekst al inline staat.
+            </span>
+          </span>
+        </label>
+
         {/* Debug toggle — shows the scoring breakdown on the results page */}
-        <label className="flex items-start gap-3 pt-2 border-t cursor-pointer select-none">
+        <label className="flex items-start gap-3 pt-4 border-t cursor-pointer select-none">
           <input
             type="checkbox"
             checked={!!data.show_debug}
