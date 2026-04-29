@@ -62,7 +62,7 @@ export const adminService = {
           color_background, color_primary, color_primary_foreground, color_title
         ),
         questionnaire_contract_types (
-          contract_types ( id, slug, name, description, order_index )
+          contract_types ( id, slug, name, subtitle, description, order_index )
         ),
         questions (
           id, text, type, order_index,
@@ -165,10 +165,11 @@ export const adminService = {
   },
 
   // Edit an individual contract type. Primarily used to maintain the
-  // customer-facing "Uitleg" description shown on the wizard results page.
+  // customer-facing copy shown on the wizard results page (subtitle line
+  // under the contract name + the longer product description below it).
   updateContractType: async (
     id: string,
-    payload: { name?: string; description?: string | null }
+    payload: { name?: string; subtitle?: string | null; description?: string | null }
   ) => {
     return handleApiResult(
       supabase.from('contract_types').update(payload).eq('id', id).select().single()

@@ -11,8 +11,11 @@
 export interface ContractResult {
   slug: string;
   name: string;
+  // Short one-liner shown directly under the contract name on the results
+  // page. Maintained alongside `description` in /admin/contract-types.
+  subtitle: string | null;
   // Long-form customer-facing copy maintained in /admin/contract-types.
-  // Shown on the results page in the "Uitleg" modal.
+  // Rendered as the body of each contract card on the results page.
   description: string | null;
   percentage: number;
   explanations: {
@@ -95,7 +98,13 @@ export interface ResultsTrace {
  */
 export function collectContractTypes(
   questionsOrData: any,
-): { slug: string; name: string; description: string | null; order_index: number }[] {
+): {
+  slug: string;
+  name: string;
+  subtitle: string | null;
+  description: string | null;
+  order_index: number;
+}[] {
   // Accept either a full questionnaireData object or the bare questions array
   // so existing callers passing `questions` keep working.
   const questionnaireData =
@@ -110,6 +119,7 @@ export function collectContractTypes(
       .map((ct: any) => ({
         slug: ct.slug,
         name: ct.name ?? ct.slug,
+        subtitle: ct.subtitle ?? null,
         description: ct.description ?? null,
         order_index: ct.order_index ?? 99,
       }))
@@ -117,9 +127,13 @@ export function collectContractTypes(
   }
 
   // Fallback: derive from answer_scores (legacy behaviour).
-  // The answer_scores join doesn't include `description`, so it stays null
-  // until the questionnaire is migrated onto questionnaire_contract_types.
-  const seen = new Map<string, { name: string; description: string | null; order_index: number }>();
+  // The answer_scores join doesn't include `subtitle`/`description`, so they
+  // stay null until the questionnaire is migrated onto
+  // questionnaire_contract_types.
+  const seen = new Map<
+    string,
+    { name: string; subtitle: string | null; description: string | null; order_index: number }
+  >();
   questions.forEach(q => {
     (q.answers || []).forEach((a: any) => {
       (a.answer_scores || []).forEach((s: any) => {
@@ -127,6 +141,7 @@ export function collectContractTypes(
         if (ct?.slug && !seen.has(ct.slug)) {
           seen.set(ct.slug, {
             name: ct.name ?? ct.slug,
+            subtitle: ct.subtitle ?? null,
             description: ct.description ?? null,
             order_index: ct.order_index ?? 99,
           });
@@ -357,6 +372,7 @@ export function calculateResultsDebug(
     .map(ct => ({
       slug: ct.slug,
       name: ct.name,
+      subtitle: ct.subtitle ?? null,
       description: ct.description ?? null,
       percentage: finalPercentages[ct.slug] ?? 0,
       explanations: explanationsBuckets[ct.slug] ?? [],

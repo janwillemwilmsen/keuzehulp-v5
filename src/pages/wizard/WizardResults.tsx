@@ -86,6 +86,11 @@ export default function WizardResults() {
                   <h2 className={`font-extrabold ${isTop ? 'text-2xl text-foreground' : 'text-xl text-muted-foreground'}`}>
                     {contract.name}
                   </h2>
+                  {contract.subtitle && (
+                    <p className={`mt-1 text-sm ${isTop ? 'text-foreground/70' : 'text-muted-foreground'}`}>
+                      {contract.subtitle}
+                    </p>
+                  )}
                 </div>
                 {/* Percentage Badge */}
                 <div

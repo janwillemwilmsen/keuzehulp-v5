@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS public.contract_types (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
+    -- Optional one-liner shown under the contract name on the results page.
+    subtitle TEXT,
     description TEXT,
     order_index INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

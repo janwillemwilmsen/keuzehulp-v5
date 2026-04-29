@@ -14,6 +14,7 @@ interface ContractType {
   id: string;
   slug: string;
   name: string;
+  subtitle: string | null;
   description: string | null;
   order_index: number;
 }
@@ -42,7 +43,7 @@ export default function ContractTypesEditor() {
 
   const handleFieldChange = (
     id: string,
-    field: 'name' | 'description',
+    field: 'name' | 'subtitle' | 'description',
     value: string,
   ) => {
     setItems(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
@@ -55,6 +56,9 @@ export default function ContractTypesEditor() {
     try {
       await adminService.updateContractType(ct.id, {
         name: ct.name,
+        // Empty strings are normalised to null so the wizard's
+        // `{contract.subtitle && ...}` guards keep working as expected.
+        subtitle: ct.subtitle?.trim() ? ct.subtitle : null,
         description: ct.description ?? '',
       });
       setStates(prev => ({ ...prev, [ct.id]: 'saved' }));
@@ -77,9 +81,10 @@ export default function ContractTypesEditor() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Contracttypes</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">
-          Beheer de naam en de "Uitleg"-tekst die eindgebruikers in de modal op de
-          resultatenpagina zien. Lege regels blijven behouden; gebruik ze gerust
-          om bullets en alinea's visueel te scheiden.
+          Beheer per contracttype de naam, een korte subtitel onder de naam en
+          de uitleg die eindgebruikers op de resultatenpagina zien. Lege regels
+          blijven behouden; gebruik ze gerust om bullets en alinea's visueel te
+          scheiden.
         </p>
       </div>
 
@@ -113,6 +118,19 @@ export default function ContractTypesEditor() {
                     onChange={e => handleFieldChange(ct.id, 'name', e.target.value)}
                     className="w-full p-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Subtitel</label>
+                  <input
+                    value={ct.subtitle ?? ''}
+                    onChange={e => handleFieldChange(ct.id, 'subtitle', e.target.value)}
+                    placeholder="Korte one-liner onder de contractnaam (optioneel)"
+                    className="w-full p-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Verschijnt op de resultatenpagina direct onder de contractnaam.
+                  </p>
                 </div>
 
                 <div>
