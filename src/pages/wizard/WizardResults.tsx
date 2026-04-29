@@ -66,126 +66,161 @@ export default function WizardResults() {
           const neutrals   = contract.explanations.filter(e => e.type === 'neutral');
           const negatives  = contract.explanations.filter(e => e.type === 'negative');
 
-          return (
-            <div
-              key={contract.slug}
-              className={`rounded-2xl border-2 overflow-hidden shadow-sm transition-all ${
-                isTop
-                  ? 'border-primary shadow-primary/10'
-                  : 'border-border/50'
-              }`}
-            >
-              {/* Card Header */}
-              <div className={`p-6 flex justify-between items-center gap-4 ${isTop ? 'bg-primary/5 border-b border-primary/15' : 'bg-muted/30 border-b border-border/50'}`}>
-                <div>
-                  {isTop && (
-                    <span className="inline-block text-xs font-bold text-primary tracking-widest uppercase mb-1 bg-primary/10 px-2 py-0.5 rounded">
-                      Beste Match
-                    </span>
-                  )}
-                  <h2 className={`font-extrabold ${isTop ? 'text-2xl text-foreground' : 'text-xl text-muted-foreground'}`}>
-                    {contract.name}
-                  </h2>
-                  {contract.subtitle && (
-                    <p className={`mt-1 text-sm ${isTop ? 'text-foreground/70' : 'text-muted-foreground'}`}>
-                      {contract.subtitle}
-                    </p>
-                  )}
-                </div>
-                {/* Percentage Badge */}
-                <div
-                  className={`shrink-0 rounded-full flex items-center justify-center font-black ${
-                    isTop
-                      ? 'w-20 h-20 text-3xl bg-primary text-primary-foreground shadow-inner'
-                      : 'w-14 h-14 text-lg bg-secondary text-secondary-foreground'
-                  }`}
-                >
-                  {contract.percentage}%
-                </div>
-              </div>
-
-              {/* Body — always shows the global product description, with the
-                  per-rationale bullets collapsed into a "Waarom past dit bij
-                  mij?" disclosure. The disclosure auto-expands on the top
-                  match so the user lands on the most relevant context. */}
-              {(contract.description ||
-                positives.length > 0 ||
-                neutrals.length > 0 ||
-                negatives.length > 0) && (
-                <div className="p-6 space-y-4 text-sm">
-
-                  {contract.description && (
-                    <p className="whitespace-pre-line leading-relaxed text-foreground">
-                      {contract.description}
-                    </p>
-                  )}
-
-                  {(positives.length > 0 ||
-                    neutrals.length > 0 ||
-                    negatives.length > 0) && (
-                    <details
-                      open={isTop}
-                      className="group rounded-lg border border-border/60 bg-muted/20 open:bg-muted/30 transition-colors"
-                    >
-                      <summary className="cursor-pointer select-none list-none px-4 py-2.5 flex items-center justify-between gap-3 font-semibold text-foreground hover:text-primary">
-                        <span>Waarom past dit bij mij?</span>
-                        <span
-                          aria-hidden="true"
-                          className="text-xs text-muted-foreground transition-transform group-open:rotate-180"
-                        >
-                          ▾
-                        </span>
-                      </summary>
-
-                      <div className="px-4 pb-4 pt-1 space-y-4">
-                        {positives.length > 0 && (
-                          <div>
-                            <h3 className="font-semibold text-foreground mb-2">✅ Goed passend</h3>
-                            <ul className="space-y-1.5">
-                              {positives.map((e, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-green-500 mt-0.5 shrink-0">●</span>
-                                  <span className="text-foreground">{e.text}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {neutrals.length > 0 && (
-                          <div>
-                            <h3 className="font-semibold text-foreground mb-2">🟡 Redelijk passend</h3>
-                            <ul className="space-y-1.5">
-                              {neutrals.map((e, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-yellow-400 mt-0.5 shrink-0">●</span>
-                                  <span className="text-foreground">{e.text}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {negatives.length > 0 && (
-                          <div>
-                            <h3 className="font-semibold text-foreground mb-2">❌ Houd hier rekening mee</h3>
-                            <ul className="space-y-1.5">
-                              {negatives.map((e, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-red-400 mt-0.5 shrink-0">■</span>
-                                  <span className="text-foreground">{e.text}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </details>
-                  )}
-
-                </div>
+          // Title block — name + optional subtitle. Shared between the
+          // top card's static header and the lower cards' <summary>.
+          const titleBlock = (
+            <div>
+              {isTop && (
+                <span className="inline-block text-xs font-bold text-primary tracking-widest uppercase mb-1 bg-primary/10 px-2 py-0.5 rounded">
+                  Beste Match
+                </span>
+              )}
+              <h2 className={`font-extrabold ${isTop ? 'text-2xl text-foreground' : 'text-xl text-muted-foreground'}`}>
+                {contract.name}
+              </h2>
+              {contract.subtitle && (
+                <p className={`mt-1 text-sm ${isTop ? 'text-foreground/70' : 'text-muted-foreground'}`}>
+                  {contract.subtitle}
+                </p>
               )}
             </div>
+          );
+
+          // Percentage badge — sized differently for top vs lower cards.
+          const percentageBadge = (
+            <div
+              className={`shrink-0 rounded-full flex items-center justify-center font-black ${
+                isTop
+                  ? 'w-20 h-20 text-3xl bg-primary text-primary-foreground shadow-inner'
+                  : 'w-14 h-14 text-lg bg-secondary text-secondary-foreground'
+              }`}
+            >
+              {contract.percentage}%
+            </div>
+          );
+
+          // Body — description + nested "Waarom past dit bij mij?" disclosure.
+          // Identical for both top and non-top cards.
+          const hasBody =
+            !!contract.description ||
+            positives.length > 0 ||
+            neutrals.length > 0 ||
+            negatives.length > 0;
+
+          const body = hasBody && (
+            <div className="p-6 space-y-4 text-sm">
+              {contract.description && (
+                <p className="whitespace-pre-line leading-relaxed text-foreground">
+                  {contract.description}
+                </p>
+              )}
+
+              {(positives.length > 0 ||
+                neutrals.length > 0 ||
+                negatives.length > 0) && (
+                <details
+                  open={isTop}
+                  className="group rounded-lg border border-border/60 bg-muted/20 open:bg-muted/30 transition-colors"
+                >
+                  <summary className="cursor-pointer select-none list-none px-4 py-2.5 flex items-center justify-between gap-3 font-semibold text-foreground hover:text-primary">
+                    <span>Waarom past dit bij mij?</span>
+                    <span
+                      aria-hidden="true"
+                      className="text-xs text-muted-foreground transition-transform group-open:rotate-180"
+                    >
+                      ▾
+                    </span>
+                  </summary>
+
+                  <div className="px-4 pb-4 pt-1 space-y-4">
+                    {positives.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">✅ Goed passend</h3>
+                        <ul className="space-y-1.5">
+                          {positives.map((e, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-green-500 mt-0.5 shrink-0">●</span>
+                              <span className="text-foreground">{e.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {neutrals.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">🟡 Redelijk passend</h3>
+                        <ul className="space-y-1.5">
+                          {neutrals.map((e, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-yellow-400 mt-0.5 shrink-0">●</span>
+                              <span className="text-foreground">{e.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {negatives.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-foreground mb-2">❌ Houd hier rekening mee</h3>
+                        <ul className="space-y-1.5">
+                          {negatives.map((e, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-red-400 mt-0.5 shrink-0">■</span>
+                              <span className="text-foreground">{e.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              )}
+            </div>
+          );
+
+          // Top card stays a plain block — it's already the user's primary
+          // focus, so we don't want to hide its body behind a click.
+          if (isTop) {
+            return (
+              <div
+                key={contract.slug}
+                className="rounded-2xl border-2 overflow-hidden shadow-sm transition-all border-primary shadow-primary/10"
+              >
+                <div className="p-6 flex justify-between items-center gap-4 bg-primary/5 border-b border-primary/15">
+                  {titleBlock}
+                  {percentageBadge}
+                </div>
+                {body}
+              </div>
+            );
+          }
+
+          // Lower-ranked cards collapse into a native <details> so the user
+          // can drill into each one on demand. The header doubles as the
+          // <summary>; clicking anywhere on it (including the "Uitleg" link)
+          // toggles the card open/closed.
+          return (
+            <details
+              key={contract.slug}
+              className="group/card rounded-2xl border-2 overflow-hidden shadow-sm transition-all border-border/50 open:border-primary/40"
+            >
+              <summary className="cursor-pointer select-none list-none p-6 flex justify-between items-center gap-4 bg-muted/30 border-b border-transparent group-open/card:border-border/50 hover:bg-muted/50 group-open/card:bg-muted/40">
+                {titleBlock}
+                <div className="flex items-center gap-4 shrink-0">
+                  {percentageBadge}
+                  <span
+                    aria-hidden="true"
+                    className="text-sm font-medium text-primary"
+                  >
+                    <span className="group-open/card:hidden">Uitleg ▾</span>
+                    <span className="hidden group-open/card:inline">Verbergen ▴</span>
+                  </span>
+                </div>
+              </summary>
+              {body}
+            </details>
           );
         })}
 
