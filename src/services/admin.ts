@@ -56,8 +56,7 @@ export const adminService = {
   getQuestionnaireFull: async (id: string) => {
     return handleApiResult(
       supabase.from('questionnaires').select(`
-        id, title, intro_text, usps, supplier_id, is_published,
-        show_debug, show_contract_descriptions, created_at,
+        id, title, intro_text, usps, supplier_id, is_published, show_debug, created_at,
         suppliers (
           id, name, slug,
           color_background, color_primary, color_primary_foreground, color_title

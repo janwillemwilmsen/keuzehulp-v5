@@ -46,10 +46,6 @@ CREATE TABLE IF NOT EXISTS public.questionnaires (
     supplier_id UUID REFERENCES public.suppliers(id) ON DELETE CASCADE,
     is_published BOOLEAN DEFAULT true,  -- Direct save, no drafts
     show_debug BOOLEAN NOT NULL DEFAULT FALSE, -- shows scoring breakdown on the results page
-    -- When true, swaps the rationale bullets on the results page for the
-    -- contract type's global product description (and hides the "Uitleg"
-    -- link, since the same copy is already shown inline).
-    show_contract_descriptions BOOLEAN NOT NULL DEFAULT FALSE,
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -1,7 +1,7 @@
 import { useWizard } from './WizardContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
-import { calculateResultsDebug, ContractResult, ResultsTrace } from '@/services/calculator';
+import { useMemo } from 'react';
+import { calculateResultsDebug, ResultsTrace } from '@/services/calculator';
 import { brandThemeStyle } from './brandTheme';
 
 export default function WizardResults() {
@@ -11,10 +11,6 @@ export default function WizardResults() {
 
   const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
   const showDebug = !!questionnaireData?.show_debug;
-  // When this questionnaire has the "Toon productomschrijving" toggle on,
-  // we replace the rationale bullets with the global contract description
-  // and suppress the "Uitleg" modal link — same copy, no need for both.
-  const useDescriptions = !!questionnaireData?.show_contract_descriptions;
 
   const { ranking, trace } = useMemo(() => {
     if (!questionnaireData) return { ranking: [], trace: null as ResultsTrace | null };
@@ -23,13 +19,6 @@ export default function WizardResults() {
   }, [questionnaireData, answers, scoringSettings]);
 
   const winner = ranking[0];
-
-  // Which contract's "Uitleg" modal is currently open (by slug). Null = closed.
-  const [openContractSlug, setOpenContractSlug] = useState<string | null>(null);
-  const openContract = useMemo(
-    () => ranking.find(c => c.slug === openContractSlug) ?? null,
-    [ranking, openContractSlug],
-  );
 
   if (loadingData) {
     return (
@@ -94,20 +83,9 @@ export default function WizardResults() {
                       Beste Match
                     </span>
                   )}
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <h2 className={`font-extrabold ${isTop ? 'text-2xl text-foreground' : 'text-xl text-muted-foreground'}`}>
-                      {contract.name}
-                    </h2>
-                    {contract.description && !useDescriptions && (
-                      <button
-                        type="button"
-                        onClick={() => setOpenContractSlug(contract.slug)}
-                        className="text-sm font-medium text-primary hover:underline underline-offset-2"
-                      >
-                        Uitleg
-                      </button>
-                    )}
-                  </div>
+                  <h2 className={`font-extrabold ${isTop ? 'text-2xl text-foreground' : 'text-xl text-muted-foreground'}`}>
+                    {contract.name}
+                  </h2>
                 </div>
                 {/* Percentage Badge */}
                 <div
@@ -121,65 +99,86 @@ export default function WizardResults() {
                 </div>
               </div>
 
-              {/* Body — either the global product description (when the
-                  questionnaire has show_contract_descriptions on) or the
-                  rationale bullets grouped by sentiment. */}
-              {useDescriptions ? (
-                contract.description && (
-                  <div className="p-6 text-sm">
+              {/* Body — always shows the global product description, with the
+                  per-rationale bullets collapsed into a "Waarom past dit bij
+                  mij?" disclosure. The disclosure auto-expands on the top
+                  match so the user lands on the most relevant context. */}
+              {(contract.description ||
+                positives.length > 0 ||
+                neutrals.length > 0 ||
+                negatives.length > 0) && (
+                <div className="p-6 space-y-4 text-sm">
+
+                  {contract.description && (
                     <p className="whitespace-pre-line leading-relaxed text-foreground">
                       {contract.description}
                     </p>
-                  </div>
-                )
-              ) : (
-                (positives.length > 0 || neutrals.length > 0 || negatives.length > 0) && (
-                  <div className="p-6 space-y-4 text-sm">
+                  )}
 
-                    {positives.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-foreground mb-2">✅ Goed passend</h3>
-                        <ul className="space-y-1.5">
-                          {positives.map((e, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="text-green-500 mt-0.5 shrink-0">●</span>
-                              <span className="text-foreground">{e.text}</span>
-                            </li>
-                          ))}
-                        </ul>
+                  {(positives.length > 0 ||
+                    neutrals.length > 0 ||
+                    negatives.length > 0) && (
+                    <details
+                      open={isTop}
+                      className="group rounded-lg border border-border/60 bg-muted/20 open:bg-muted/30 transition-colors"
+                    >
+                      <summary className="cursor-pointer select-none list-none px-4 py-2.5 flex items-center justify-between gap-3 font-semibold text-foreground hover:text-primary">
+                        <span>Waarom past dit bij mij?</span>
+                        <span
+                          aria-hidden="true"
+                          className="text-xs text-muted-foreground transition-transform group-open:rotate-180"
+                        >
+                          ▾
+                        </span>
+                      </summary>
+
+                      <div className="px-4 pb-4 pt-1 space-y-4">
+                        {positives.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-foreground mb-2">✅ Goed passend</h3>
+                            <ul className="space-y-1.5">
+                              {positives.map((e, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span className="text-green-500 mt-0.5 shrink-0">●</span>
+                                  <span className="text-foreground">{e.text}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {neutrals.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-foreground mb-2">🟡 Redelijk passend</h3>
+                            <ul className="space-y-1.5">
+                              {neutrals.map((e, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span className="text-yellow-400 mt-0.5 shrink-0">●</span>
+                                  <span className="text-foreground">{e.text}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {negatives.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-foreground mb-2">❌ Houd hier rekening mee</h3>
+                            <ul className="space-y-1.5">
+                              {negatives.map((e, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span className="text-red-400 mt-0.5 shrink-0">■</span>
+                                  <span className="text-foreground">{e.text}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </details>
+                  )}
 
-                    {neutrals.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-foreground mb-2">🟡 Redelijk passend</h3>
-                        <ul className="space-y-1.5">
-                          {neutrals.map((e, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="text-yellow-400 mt-0.5 shrink-0">●</span>
-                              <span className="text-foreground">{e.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {negatives.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-foreground mb-2">❌ Houd hier rekening mee</h3>
-                        <ul className="space-y-1.5">
-                          {negatives.map((e, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="text-red-400 mt-0.5 shrink-0">■</span>
-                              <span className="text-foreground">{e.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                  </div>
-                )
+                </div>
               )}
             </div>
           );
@@ -195,82 +194,6 @@ export default function WizardResults() {
         {/* Debug Panel — only when show_debug is on for this questionnaire */}
         {showDebug && trace && <DebugPanel trace={trace} />}
 
-      </div>
-
-      {/* Uitleg modal — maintained in /admin/contract-types */}
-      {openContract && (
-        <ContractExplanationModal
-          contract={openContract}
-          onClose={() => setOpenContractSlug(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── Uitleg Modal ─────────────────────────────────────────────────────────────
-// Simple fixed-position overlay. Closes on backdrop click, Escape key, or the
-// explicit "Sluiten" button. Preserves the newlines/bullets as they are stored
-// in contract_types.description via `whitespace-pre-line`.
-
-function ContractExplanationModal({
-  contract,
-  onClose,
-}: {
-  contract: ContractResult;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-[2px]"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="uitleg-title"
-    >
-      <div
-        className="relative w-full max-w-lg bg-background rounded-2xl shadow-xl border overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        <header className="px-6 py-4 border-b bg-muted/30 flex items-center justify-between gap-4">
-          <h3 id="uitleg-title" className="font-extrabold text-lg">{contract.name}</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Sluiten"
-            className="shrink-0 w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground text-lg leading-none"
-          >
-            ×
-          </button>
-        </header>
-        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto">
-          {contract.description ? (
-            <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
-              {contract.description}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">
-              Voor dit contracttype is nog geen uitleg beschikbaar.
-            </p>
-          )}
-        </div>
-        <footer className="px-6 py-3 border-t bg-muted/20 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
-          >
-            Sluiten
-          </button>
-        </footer>
       </div>
     </div>
   );
