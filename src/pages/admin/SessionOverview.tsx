@@ -37,6 +37,56 @@ export default function SessionOverview() {
     setExpandedId(prev => prev === id ? null : id);
   };
 
+  const exportToCSV = () => {
+    if (!sessions.length) return;
+
+    const headers = ['ID', 'Datum', 'Keuzehulp', 'Leverancier', 'Resultaat 1', 'Percentage 1', 'Vragen & Antwoorden', 'Feedback'];
+    
+    const rows = sessions.map(session => {
+      const data = session.session_data || {};
+      const winner = data.results && data.results.length > 0 ? data.results[0] : null;
+      
+      const answersText = Object.values(data.answers || {}).map((ans: any) => {
+        const text = ans.questionText || '';
+        const selected = ans.selectedAnswers?.map((sa: any) => sa.text).join(', ') || '';
+        return `${text}: ${selected}`;
+      }).join(' | ');
+
+      let feedbackText = '';
+      if (data.feedback) {
+        Object.entries(data.feedback).forEach(([, fbGroup]: [string, any]) => {
+          Object.values(fbGroup).forEach((fb: any) => {
+             const fbQ = fb.questionText || '';
+             const fbR = fb.rating ? `Score: ${fb.rating}` : '';
+             const fbT = fb.text ? `Tekst: "${fb.text}"` : '';
+             feedbackText += `[${fbQ} -> ${fbR} ${fbT}] `;
+          });
+        });
+      }
+
+      return [
+        session.id,
+        new Date(session.updated_at).toISOString(),
+        `"${(session.questionnaires?.title || '').replace(/"/g, '""')}"`,
+        session.supplier_slug || '',
+        `"${(winner ? winner.name : '').replace(/"/g, '""')}"`,
+        winner ? winner.percentage : '',
+        `"${answersText.replace(/"/g, '""')}"`,
+        `"${feedbackText.replace(/"/g, '""')}"`
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `sessies_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex items-center text-sm text-muted-foreground mb-4">
@@ -45,11 +95,21 @@ export default function SessionOverview() {
         <span className="font-medium text-foreground">Sessies & Resultaten</span>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Sessies & Analytics</h1>
-        <p className="text-muted-foreground mt-2">
-          Bekijk live inzendingen en feedback van bezoekers die de keuzehulp gebruiken.
-        </p>
+      <div className="flex justify-between items-start flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Sessies & Analytics</h1>
+          <p className="text-muted-foreground mt-2">
+            Bekijk live inzendingen en feedback van bezoekers die de keuzehulp gebruiken.
+          </p>
+        </div>
+        <button
+          onClick={exportToCSV}
+          disabled={sessions.length === 0}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium shadow-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exporteer (CSV)
+        </button>
       </div>
 
       {loading ? (
