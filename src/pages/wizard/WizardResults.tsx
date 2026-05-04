@@ -1,6 +1,6 @@
 import { useWizard } from './WizardContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { calculateResultsDebug, ResultsTrace } from '@/services/calculator';
 import { brandThemeStyle } from './brandTheme';
 import FeedbackForm from './components/FeedbackForm';
@@ -8,7 +8,7 @@ import FeedbackForm from './components/FeedbackForm';
 export default function WizardResults() {
   useParams();
   const navigate = useNavigate();
-  const { answers, feedbackAnswers, setFeedbackAnswer, questionnaireData, globalFeedbackQuestions, scoringSettings, loadingData } = useWizard();
+  const { answers, feedbackAnswers, setFeedbackAnswer, questionnaireData, globalFeedbackQuestions, scoringSettings, loadingData, setResultsData } = useWizard();
 
   const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
   const showDebug = !!questionnaireData?.show_debug;
@@ -18,6 +18,17 @@ export default function WizardResults() {
     const out = calculateResultsDebug(questionnaireData, answers, scoringSettings);
     return { ranking: out.results, trace: out.trace };
   }, [questionnaireData, answers, scoringSettings]);
+
+  useEffect(() => {
+    // Sync the final ranking to context so it can be pushed to the database session
+    if (ranking && ranking.length > 0) {
+      setResultsData(ranking.map(r => ({
+        slug: r.slug,
+        name: r.name,
+        percentage: r.percentage
+      })));
+    }
+  }, [ranking, setResultsData]);
 
   const winner = ranking[0];
 

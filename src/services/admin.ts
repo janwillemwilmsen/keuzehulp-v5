@@ -239,4 +239,33 @@ export const adminService = {
   deleteGlobalFeedbackQuestion: async (id: string) => {
     return handleApiResult(supabase.from('global_feedback_questions').delete().eq('id', id));
   },
+
+  // User Sessions
+  upsertUserSession: async (payload: { id: string, questionnaire_id: string, supplier_slug: string, session_data: any }) => {
+    const { id, questionnaire_id, supplier_slug, session_data } = payload;
+    return handleApiResult(
+      supabase.from('user_sessions')
+        .upsert(
+          { 
+            id, 
+            questionnaire_id, 
+            supplier_slug, 
+            session_data,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'id' }
+        )
+    );
+  },
+
+  getUserSessions: async () => {
+    return handleApiResult(
+      supabase.from('user_sessions')
+        .select(`
+          *,
+          questionnaires:questionnaire_id ( title )
+        `)
+        .order('updated_at', { ascending: false })
+    );
+  },
 };

@@ -14,6 +14,7 @@ interface WizardState {
   setAnswer: (questionId: string, answerIds: string[]) => void;
   setFeedbackAnswer: (wizardQuestionId: string, feedbackQuestionId: string, field: 'rating' | 'text', value: any) => void;
   loadQuestionnaire: (id: string, supplier: 'essent' | 'energiedirect') => void;
+  setResultsData: (data: any[]) => void;
 }
 
 const WizardContext = createContext<WizardState | undefined>(undefined);
@@ -27,6 +28,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [globalFeedbackQuestions, setGlobalFeedbackQuestions] = useState<any[]>([]);
   const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(DEFAULT_SCORING_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
+  const [sessionId] = useState(() => crypto.randomUUID());
+  
+  // Track final results so we can sync them too
+  const [resultsData, setResultsData] = useState<any[] | null>(null);
 
   useEffect(() => {
     if (questionnaireId) {
@@ -54,6 +59,57 @@ export function WizardProvider({ children }: { children: ReactNode }) {
          .finally(() => setLoadingData(false));
     }
   }, [questionnaireId]);
+
+  // Live Sync Effect
+  useEffect(() => {
+    if (!questionnaireId || !supplierPrefix || !questionnaireData) return;
+
+    // Debounce the sync to avoid hammering the DB on every keystroke
+    const timer = setTimeout(() => {
+      
+      // Build enriched answer data with actual text
+      const enrichedAnswers: Record<string, any> = {};
+      Object.entries(answers).forEach(([qId, selectedIds]) => {
+        const question = questionnaireData.questions?.find((q: any) => q.id === qId);
+        if (question) {
+          const selected = question.answers?.filter((a: any) => selectedIds.includes(a.id)) || [];
+          enrichedAnswers[qId] = {
+            questionText: question.text,
+            selectedAnswers: selected.map((a: any) => ({ id: a.id, text: a.text }))
+          };
+        }
+      });
+
+      // Build enriched feedback data
+      const enrichedFeedback: Record<string, any> = {};
+      Object.entries(feedbackAnswers).forEach(([wQId, fbData]) => {
+        enrichedFeedback[wQId] = {};
+        Object.entries(fbData).forEach(([fbQId, fbAns]) => {
+          const fbQ = globalFeedbackQuestions.find((q: any) => q.id === fbQId);
+          enrichedFeedback[wQId][fbQId] = {
+            ...fbAns,
+            questionText: fbQ?.text || 'Unknown question'
+          };
+        });
+      });
+
+      const session_data = {
+        answers: enrichedAnswers,
+        feedback: enrichedFeedback,
+        results: resultsData
+      };
+
+      adminService.upsertUserSession({
+        id: sessionId,
+        questionnaire_id: questionnaireId,
+        supplier_slug: supplierPrefix,
+        session_data
+      }).catch(err => console.error("Failed to sync session", err));
+
+    }, 1000); // 1s debounce
+
+    return () => clearTimeout(timer);
+  }, [answers, feedbackAnswers, resultsData, questionnaireId, supplierPrefix, questionnaireData, globalFeedbackQuestions, sessionId]);
 
   const setAnswer = (questionId: string, answerIds: string[]) => {
     setAnswers(prev => ({ ...prev, [questionId]: answerIds }));
@@ -87,7 +143,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     <WizardContext.Provider value={{ 
       questionnaireId, supplierPrefix, answers, feedbackAnswers, 
       questionnaireData, globalFeedbackQuestions, scoringSettings, 
-      loadingData, setAnswer, setFeedbackAnswer, loadQuestionnaire 
+      loadingData, setAnswer, setFeedbackAnswer, loadQuestionnaire,
+      setResultsData
     }}>
       {children}
     </WizardContext.Provider>

@@ -52,6 +52,13 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Link
+            to="/admin/sessions"
+            className="px-4 py-2 rounded-md font-bold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 text-sm"
+          >
+            📊 Sessies & Analytics
+          </Link>
+          <div className="w-px h-6 bg-border mx-1" />
+          <Link
             to="/admin/feedback-settings"
             className="px-4 py-2 rounded-md font-medium border border-border bg-background hover:bg-muted text-sm"
           >

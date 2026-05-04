@@ -6,6 +6,7 @@ import ScoringRules from './pages/admin/ScoringRules';
 import ContractTypesEditor from './pages/admin/ContractTypesEditor';
 import BrandThemes from './pages/admin/BrandThemes';
 import FeedbackSettings from './pages/admin/FeedbackSettings';
+import SessionOverview from './pages/admin/SessionOverview';
 import Login from './pages/admin/Login';
 import WizardEntry from './pages/wizard/WizardEntry';
 import WizardStep from './pages/wizard/WizardStep';
@@ -36,6 +37,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/sessions" 
+            element={
+              <ProtectedRoute>
+                <SessionOverview />
               </ProtectedRoute>
             } 
           />
