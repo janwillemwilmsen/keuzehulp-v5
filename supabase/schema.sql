@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS public.questionnaires (
     supplier_id UUID REFERENCES public.suppliers(id) ON DELETE CASCADE,
     is_published BOOLEAN DEFAULT true,  -- Direct save, no drafts
     show_debug BOOLEAN NOT NULL DEFAULT FALSE, -- shows scoring breakdown on the results page
+    show_results_feedback BOOLEAN NOT NULL DEFAULT FALSE, -- shows feedback form on results page
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
     questionnaire_id UUID REFERENCES public.questionnaires(id) ON DELETE CASCADE,
     text TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('single', 'multiple', 'open')),
+    show_feedback BOOLEAN NOT NULL DEFAULT FALSE, -- shows general feedback question below this question
     order_index INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -108,6 +110,17 @@ CREATE TABLE IF NOT EXISTS public.scoring_settings (
     optimal_ceiling         INTEGER NOT NULL DEFAULT 100 CHECK (optimal_ceiling BETWEEN 0 AND 100),
     neutral_when_empty_percentage INTEGER NOT NULL DEFAULT 50 CHECK (neutral_when_empty_percentage BETWEEN 0 AND 100),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Global Feedback Questions
+CREATE TABLE IF NOT EXISTS public.global_feedback_questions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    category TEXT NOT NULL CHECK (category IN ('per_question', 'results')),
+    text TEXT NOT NULL,
+    rating_type TEXT NOT NULL CHECK (rating_type IN ('none', '1-5', '1-10', 'yes_no')),
+    has_open_field BOOLEAN NOT NULL DEFAULT false,
+    order_index INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ============================================================
@@ -153,6 +166,15 @@ FROM public.suppliers s, public.contract_types ct
 WHERE s.slug = 'energiedirect'
   AND ct.slug IN ('variabel', 'vast1', 'vast2', 'vast3', 'dynamisch', 'timeofuse')
 ON CONFLICT DO NOTHING;
+
+-- Feedback Questions seed data
+INSERT INTO public.global_feedback_questions (category, text, rating_type, has_open_field, order_index) VALUES
+  ('per_question', 'Algemene feedback', '1-5', true, 1),
+  ('results', 'Had je zelf verwacht op dit contract uit te komen?', 'yes_no', true, 1),
+  ('results', 'Hoe duidelijk vind je de uitkomst van de Keuzehulp?', '1-5', true, 2),
+  ('results', 'Heb je suggesties voor verbeteringen of toevoegingen aan de keuzehulp? Zijn er bepaalde functionaliteiten die je zou willen zien?', 'none', true, 3),
+  ('results', 'In hoeverre helpt de uitkomst je bij het kiezen van een contract?', '1-5', true, 4),
+  ('results', 'Hoe waarschijnlijk is het dat je de keuzehulp aan een vriend of collega zou aanbevelen?', '1-10', false, 5);
 
 -- ============================================================
 -- Row Level Security (enable in production)

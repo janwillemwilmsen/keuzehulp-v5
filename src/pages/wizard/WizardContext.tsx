@@ -6,10 +6,13 @@ interface WizardState {
   questionnaireId: string | null;
   supplierPrefix: 'essent' | 'energiedirect' | null;
   answers: Record<string, string[]>; // questionId -> array of selected answerIds
+  feedbackAnswers: Record<string, Record<string, { rating?: any, text?: string }>>; // wizardQuestionId -> feedbackQuestionId -> data
   questionnaireData: any | null;
+  globalFeedbackQuestions: any[];
   scoringSettings: ScoringSettings;
   loadingData: boolean;
   setAnswer: (questionId: string, answerIds: string[]) => void;
+  setFeedbackAnswer: (wizardQuestionId: string, feedbackQuestionId: string, field: 'rating' | 'text', value: any) => void;
   loadQuestionnaire: (id: string, supplier: 'essent' | 'energiedirect') => void;
 }
 
@@ -19,7 +22,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [questionnaireId, setQuestionnaireId] = useState<string | null>(null);
   const [supplierPrefix, setSupplierPrefix] = useState<'essent' | 'energiedirect' | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [feedbackAnswers, setFeedbackAnswers] = useState<Record<string, Record<string, { rating?: any, text?: string }>>>({});
   const [questionnaireData, setQuestionnaireData] = useState<any | null>(null);
+  const [globalFeedbackQuestions, setGlobalFeedbackQuestions] = useState<any[]>([]);
   const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(DEFAULT_SCORING_SETTINGS);
   const [loadingData, setLoadingData] = useState(true);
 
@@ -29,9 +34,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
        Promise.all([
          adminService.getQuestionnaireFull(questionnaireId),
          adminService.getScoringSettings().catch(() => null),
+         adminService.getGlobalFeedbackQuestions().catch(() => []),
        ])
-         .then(([data, settings]) => {
+         .then(([data, settings, feedbackQs]) => {
            setQuestionnaireData(data);
+           setGlobalFeedbackQuestions(feedbackQs || []);
            if (settings) {
              setScoringSettings({
                base_min_percentage: settings.base_min_percentage,
@@ -52,6 +59,23 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setAnswers(prev => ({ ...prev, [questionId]: answerIds }));
   };
 
+  const setFeedbackAnswer = (wizardQuestionId: string, feedbackQuestionId: string, field: 'rating' | 'text', value: any) => {
+    setFeedbackAnswers(prev => {
+      const wizardAnswers = prev[wizardQuestionId] || {};
+      const feedbackAnswer = wizardAnswers[feedbackQuestionId] || {};
+      return {
+        ...prev,
+        [wizardQuestionId]: {
+          ...wizardAnswers,
+          [feedbackQuestionId]: {
+            ...feedbackAnswer,
+            [field]: value
+          }
+        }
+      };
+    });
+  };
+
   const loadQuestionnaire = (id: string, supplier: 'essent' | 'energiedirect') => {
     if (id !== questionnaireId) {
       setQuestionnaireId(id);
@@ -60,7 +84,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <WizardContext.Provider value={{ questionnaireId, supplierPrefix, answers, questionnaireData, scoringSettings, loadingData, setAnswer, loadQuestionnaire }}>
+    <WizardContext.Provider value={{ 
+      questionnaireId, supplierPrefix, answers, feedbackAnswers, 
+      questionnaireData, globalFeedbackQuestions, scoringSettings, 
+      loadingData, setAnswer, setFeedbackAnswer, loadQuestionnaire 
+    }}>
       {children}
     </WizardContext.Provider>
   );

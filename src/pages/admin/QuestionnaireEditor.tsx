@@ -93,6 +93,41 @@ export default function QuestionnaireEditor() {
     } catch(e) { console.error(e) }
   };
 
+  const handleMoveQuestion = async (index: number, direction: 'up' | 'down') => {
+    if (!data || !data.questions) return;
+    
+    const questions = [...data.questions].sort((a:any, b:any) => a.order_index - b.order_index);
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= questions.length) return;
+    
+    const currentQ = questions[index];
+    const targetQ = questions[targetIndex];
+    
+    // Swap their order_indices
+    const tempOrder = currentQ.order_index;
+    currentQ.order_index = targetQ.order_index;
+    targetQ.order_index = tempOrder;
+    
+    // Update local state optimistically
+    setData({ ...data, questions });
+    
+    // Persist to DB
+    try {
+      setSaving(true);
+      await Promise.all([
+        adminService.updateQuestion(currentQ.id, { order_index: currentQ.order_index }),
+        adminService.updateQuestion(targetQ.id, { order_index: targetQ.order_index })
+      ]);
+    } catch(e) { 
+      console.error(e);
+      // Revert on error by reloading
+      await loadData(data.id);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div className="p-8">Laden...</div>;
   if (!data) return <div className="p-8">Niet gevonden.</div>;
 
@@ -235,6 +270,21 @@ export default function QuestionnaireEditor() {
             </span>
           </span>
         </label>
+        
+        <label className="flex items-start gap-3 pt-4 border-t cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={!!data.show_results_feedback}
+            onChange={e => handleUpdateMeta('show_results_feedback', e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+          />
+          <span className="text-sm">
+            <span className="font-medium">Toon feedback formulier op de resultatenpagina</span>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Toont het 'Resultaten Feedback' formulier aan het einde van de keuzehulp.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="flex items-center justify-between mt-12 mb-4">
@@ -246,13 +296,16 @@ export default function QuestionnaireEditor() {
 
       {/* Questions List */}
       <div className="space-y-6">
-         {data.questions?.sort((a:any, b:any) => a.order_index - b.order_index).map((q: any) => (
+         {data.questions?.sort((a:any, b:any) => a.order_index - b.order_index).map((q: any, index: number) => (
            <QuestionCard 
               key={q.id} 
               question={q} 
               contractTypes={contractTypes} 
               onDelete={() => handleDeleteQuestion(q.id)}
               onUpdate={() => loadData(data.id)}
+              onMove={(direction: 'up' | 'down') => handleMoveQuestion(index, direction)}
+              isFirst={index === 0}
+              isLast={index === (data.questions?.length || 0) - 1}
            />
          ))}
          {data.questions?.length === 0 && (

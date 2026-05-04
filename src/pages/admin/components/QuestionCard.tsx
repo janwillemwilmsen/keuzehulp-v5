@@ -8,10 +8,11 @@ const TYPE_OPTIONS = [
   { value: 'open',     label: 'Open vraag',                       hint: 'Gebruiker typt een vrij antwoord (geen scorematrix)' },
 ] as const;
 
-export default function QuestionCard({ question, contractTypes, onDelete, onUpdate }: any) {
+export default function QuestionCard({ question, contractTypes, onDelete, onUpdate, onMove, isFirst, isLast }: any) {
   const [loading, setLoading] = useState(false);
   const [qText, setQText] = useState(question.text);
   const [qType, setQType] = useState<string>(question.type ?? 'single');
+  const [showFeedback, setShowFeedback] = useState(question.show_feedback === true);
 
   const handleQuestionTextSave = async () => {
     if (qText !== question.text) {
@@ -84,12 +85,35 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
             ))}
           </div>
         </div>
-        <button
-          onClick={onDelete}
-          className="text-destructive hover:bg-destructive/10 px-3 py-1 rounded-md text-sm font-medium shrink-0"
-        >
-          Verwijderen
-        </button>
+        
+        {/* Actions Container */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => onMove?.('up')}
+            disabled={isFirst}
+            className="text-muted-foreground hover:bg-muted p-1.5 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Omhoog verplaatsen"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+          </button>
+          <button
+            onClick={() => onMove?.('down')}
+            disabled={isLast}
+            className="text-muted-foreground hover:bg-muted p-1.5 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Omlaag verplaatsen"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          
+          <div className="w-px h-6 bg-border mx-1"></div>
+
+          <button
+            onClick={onDelete}
+            className="text-destructive hover:bg-destructive/10 px-3 py-1.5 rounded-md text-sm font-medium"
+          >
+            Verwijderen
+          </button>
+        </div>
       </div>
 
       {/* Open question notice — no scoring matrix needed */}
@@ -120,6 +144,31 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
           </div>
         </>
       )}
+
+      {/* Feedback Toggle */}
+      <div className="px-4 py-3 bg-muted/5 border-t flex items-center justify-between">
+        <label htmlFor={`feedback-${question.id}`} className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+          <input
+            id={`feedback-${question.id}`}
+            type="checkbox"
+            checked={showFeedback}
+            onChange={async (e) => {
+              const val = e.target.checked;
+              setShowFeedback(val); // Optimistic UI update
+              try {
+                await adminService.updateQuestion(question.id, { show_feedback: val });
+                // We no longer call onUpdate() here to prevent the full page "Laden..." refresh.
+                // The database is updated silently in the background.
+              } catch (err) {
+                console.error(err);
+                setShowFeedback(!val); // Revert on error
+              }
+            }}
+            className="rounded border-border text-primary focus:ring-primary"
+          />
+          Toon algemene feedbackvraag na deze vraag
+        </label>
+      </div>
 
     </div>
   );

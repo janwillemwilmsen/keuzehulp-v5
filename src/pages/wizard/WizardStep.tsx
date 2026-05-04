@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWizard } from './WizardContext';
 import { brandThemeStyle } from './brandTheme';
+import FeedbackForm from './components/FeedbackForm';
 
 export default function WizardStep() {
   const { id, questionIndex } = useParams();
   const navigate = useNavigate();
-  const { setAnswer, answers, questionnaireData, loadingData } = useWizard();
+  const { setAnswer, answers, feedbackAnswers, setFeedbackAnswer, questionnaireData, globalFeedbackQuestions, loadingData } = useWizard();
 
   if (loadingData || !questionnaireData) {
     return <div className="min-h-screen flex items-center justify-center">Laden...</div>;
@@ -135,8 +136,18 @@ export default function WizardStep() {
           </div>
         )}
 
+        {question.show_feedback && (
+          <FeedbackForm
+            title="Help ons de keuzehulp te verbeteren"
+            questions={globalFeedbackQuestions.filter(q => q.category === 'per_question')}
+            values={feedbackAnswers[question.id] || {}}
+            onChange={(feedbackQuestionId, field, value) => setFeedbackAnswer(question.id, feedbackQuestionId, field, value)}
+            className="pt-6 mt-6 border-t border-border/50"
+          />
+        )}
+
         {/* Navigation */}
-        <div className="flex justify-between items-center pt-6 border-t border-border/50">
+        <div className="flex justify-between items-center pt-6 mt-6 border-t border-border/50">
           <button
             onClick={() => navigate(-1)}
             className="text-muted-foreground hover:text-foreground font-medium px-4 py-2"

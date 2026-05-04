@@ -56,7 +56,7 @@ export const adminService = {
   getQuestionnaireFull: async (id: string) => {
     return handleApiResult(
       supabase.from('questionnaires').select(`
-        id, title, intro_text, usps, supplier_id, is_published, show_debug, created_at,
+        id, title, intro_text, usps, supplier_id, is_published, show_debug, show_results_feedback, created_at,
         suppliers (
           id, name, slug,
           color_background, color_primary, color_primary_foreground, color_title
@@ -65,7 +65,7 @@ export const adminService = {
           contract_types ( id, slug, name, subtitle, description, order_index )
         ),
         questions (
-          id, text, type, order_index,
+          id, text, type, show_feedback, order_index,
           answers (
             id, text, description, order_index,
             answer_scores (
@@ -217,5 +217,26 @@ export const adminService = {
         .select()
         .single()
     );
+  },
+
+  // Global Feedback Questions
+  getGlobalFeedbackQuestions: async () => {
+    return handleApiResult(
+      supabase.from('global_feedback_questions').select('*').order('order_index', { ascending: true })
+    );
+  },
+
+  addGlobalFeedbackQuestion: async (category: string, text: string, rating_type: string, has_open_field: boolean, order_index: number) => {
+    return handleApiResult(
+      supabase.from('global_feedback_questions').insert([{ category, text, rating_type, has_open_field, order_index }]).select().single()
+    );
+  },
+
+  updateGlobalFeedbackQuestion: async (id: string, payload: any) => {
+    return handleApiResult(supabase.from('global_feedback_questions').update(payload).eq('id', id));
+  },
+
+  deleteGlobalFeedbackQuestion: async (id: string) => {
+    return handleApiResult(supabase.from('global_feedback_questions').delete().eq('id', id));
   },
 };

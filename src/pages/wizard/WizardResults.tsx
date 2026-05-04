@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import { calculateResultsDebug, ResultsTrace } from '@/services/calculator';
 import { brandThemeStyle } from './brandTheme';
+import FeedbackForm from './components/FeedbackForm';
 
 export default function WizardResults() {
   useParams();
   const navigate = useNavigate();
-  const { answers, questionnaireData, scoringSettings, loadingData } = useWizard();
+  const { answers, feedbackAnswers, setFeedbackAnswer, questionnaireData, globalFeedbackQuestions, scoringSettings, loadingData } = useWizard();
 
   const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
   const showDebug = !!questionnaireData?.show_debug;
@@ -58,6 +59,18 @@ export default function WizardResults() {
             Op basis van jouw antwoorden hebben we berekend welk contract het beste bij je past.
           </p>
         </div>
+
+        {/* Results Feedback Stepper */}
+        {questionnaireData.show_results_feedback && (
+          <FeedbackForm
+            title="Help ons de keuzehulp te verbeteren"
+            questions={globalFeedbackQuestions.filter(q => q.category === 'results')}
+            values={feedbackAnswers['results'] || {}}
+            onChange={(feedbackQuestionId, field, value) => setFeedbackAnswer('results', feedbackQuestionId, field, value)}
+            isStepper={true}
+            className="bg-card border rounded-2xl p-6 md:p-8 shadow-sm mb-8"
+          />
+        )}
 
         {/* Contract Cards */}
         {ranking.map((contract, index) => {
@@ -233,6 +246,8 @@ export default function WizardResults() {
 
         {/* Debug Panel — only when show_debug is on for this questionnaire */}
         {showDebug && trace && <DebugPanel trace={trace} />}
+
+
 
       </div>
     </div>

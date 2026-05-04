@@ -5,6 +5,7 @@ import QuestionnaireEditor from './pages/admin/QuestionnaireEditor';
 import ScoringRules from './pages/admin/ScoringRules';
 import ContractTypesEditor from './pages/admin/ContractTypesEditor';
 import BrandThemes from './pages/admin/BrandThemes';
+import FeedbackSettings from './pages/admin/FeedbackSettings';
 import Login from './pages/admin/Login';
 import WizardEntry from './pages/wizard/WizardEntry';
 import WizardStep from './pages/wizard/WizardStep';
@@ -67,6 +68,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BrandThemes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/feedback-settings"
+            element={
+              <ProtectedRoute>
+                <FeedbackSettings />
               </ProtectedRoute>
             }
           />
