@@ -108,7 +108,7 @@ export default function WizardResults() {
             negatives.length > 0;
 
           const body = hasBody && (
-            <div className="p-6 space-y-4 text-sm">
+            <div className="p-6 space-y-4 text-sm bg-white">
               {contract.description && (
                 <p className="whitespace-pre-line leading-relaxed text-foreground">
                   {contract.description}
