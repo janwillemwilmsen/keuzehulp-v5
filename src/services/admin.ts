@@ -92,8 +92,14 @@ export const adminService = {
 
   // Questions
   addQuestion: async (questionnaire_id: string, text: string, type: string = 'single') => {
+    const existing = await handleApiResult(
+      supabase.from('questions').select('order_index').eq('questionnaire_id', questionnaire_id)
+    );
+    const maxIdx = (existing ?? []).reduce(
+      (max: number, r: any) => Math.max(max, r.order_index ?? 0), 0
+    );
     return handleApiResult(
-      supabase.from('questions').insert([{ questionnaire_id, text, type }]).select().single()
+      supabase.from('questions').insert([{ questionnaire_id, text, type, order_index: maxIdx + 1 }]).select().single()
     );
   },
   
@@ -107,8 +113,15 @@ export const adminService = {
 
   // Answers
   addAnswer: async (question_id: string, text: string) => {
+    // Compute the next order_index so new answers always sort deterministically.
+    const existing = await handleApiResult(
+      supabase.from('answers').select('order_index').eq('question_id', question_id)
+    );
+    const maxIdx = (existing ?? []).reduce(
+      (max: number, r: any) => Math.max(max, r.order_index ?? 0), 0
+    );
     return handleApiResult(
-      supabase.from('answers').insert([{ question_id, text }]).select().single()
+      supabase.from('answers').insert([{ question_id, text, order_index: maxIdx + 1 }]).select().single()
     );
   },
   

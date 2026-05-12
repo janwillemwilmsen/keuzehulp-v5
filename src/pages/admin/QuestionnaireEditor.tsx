@@ -96,7 +96,7 @@ export default function QuestionnaireEditor() {
   const handleMoveQuestion = async (index: number, direction: 'up' | 'down') => {
     if (!data || !data.questions) return;
     
-    const questions = [...data.questions].sort((a:any, b:any) => a.order_index - b.order_index);
+    const questions = [...data.questions].sort((a:any, b:any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id));
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     
     if (targetIndex < 0 || targetIndex >= questions.length) return;
@@ -296,7 +296,7 @@ export default function QuestionnaireEditor() {
 
       {/* Questions List */}
       <div className="space-y-6">
-         {data.questions?.sort((a:any, b:any) => a.order_index - b.order_index).map((q: any, index: number) => (
+         {data.questions?.sort((a:any, b:any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id)).map((q: any, index: number) => (
            <QuestionCard 
               key={q.id} 
               question={q} 

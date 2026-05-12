@@ -90,7 +90,7 @@ export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, 
         </tr>
       </thead>
       <tbody className="divide-y">
-        {[...answers].sort((a: any, b: any) => a.order_index - b.order_index).map((answer: any) => (
+        {[...answers].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id)).map((answer: any) => (
           <tr key={answer.id} className="align-top hover:bg-muted/5 transition-colors">
 
             {/* Answer text + optional helper description */}

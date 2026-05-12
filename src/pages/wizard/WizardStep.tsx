@@ -13,7 +13,7 @@ export default function WizardStep() {
   }
 
   const dbQuestions = (questionnaireData.questions ?? []).sort(
-    (a: any, b: any) => a.order_index - b.order_index
+    (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id)
   );
 
   const index = parseInt(questionIndex || '1', 10) - 1;
@@ -64,7 +64,7 @@ export default function WizardStep() {
     : currentAnswers.length > 0;
 
   const sortedOptions = (question.answers ?? []).sort(
-    (a: any, b: any) => a.order_index - b.order_index
+    (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id)
   );
 
   return (
