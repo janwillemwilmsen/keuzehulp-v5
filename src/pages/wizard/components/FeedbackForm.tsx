@@ -57,8 +57,8 @@ export default function FeedbackForm({ title, questions, values, onChange, isSte
             ))}
           </div>
           <div className="flex justify-between w-[272px] mt-2 text-xs text-muted-foreground mx-auto md:mx-0 px-1">
-            <span>Helemaal niet duidelijk</span>
-            <span>Heel duidelijk</span>
+            <span>Helemaal <br />niet duidelijk</span>
+            <span className="text-right">Heel <br />duidelijk</span>
           </div>
         </div>
       )}

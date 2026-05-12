@@ -26,7 +26,7 @@ export default function WizardStep() {
 
   const themeStyle = brandThemeStyle(questionnaireData.suppliers);
   const isMultiple = question.type === 'multiple';
-  const isOpen     = question.type === 'open';
+  const isOpen = question.type === 'open';
 
   // Read straight from the wizard context. The component is reused across
   // question routes (only the URL param changes), so any local state would
@@ -74,14 +74,17 @@ export default function WizardStep() {
         {/* Progress */}
         <div className="flex justify-between items-center text-sm text-muted-foreground mb-6 font-medium">
           <span>Vraag {index + 1} van {dbQuestions.length}</span>
-          <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
-            {isOpen ? 'Open vraag' : isMultiple ? 'Meerdere antwoorden mogelijk' : 'Kies één antwoord'}
-          </span>
+
         </div>
 
-        <h2 className="text-2xl font-bold mb-8" style={{ color: 'var(--brand-title, var(--foreground))' }}>
+        <h2 className="text-2xl font-bold" style={{ color: 'var(--brand-title, var(--foreground))' }}>
           {question.text}
         </h2>
+        <div className="flex justify-between items-center text-sm text-muted-foreground mb-6 font-medium">
+          <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
+            {isOpen ? 'Open vraag' : isMultiple ? 'Meerdere antwoorden mogelijk' : ''}
+          </span>
+        </div>
 
         {/* ── Open question ── */}
         {isOpen && (
@@ -117,7 +120,7 @@ export default function WizardStep() {
                     >
                       {isSelected && (
                         isMultiple
-                          ? <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          ? <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           : <div className="w-2 h-2 bg-primary-foreground rounded-full" />
                       )}
                     </div>

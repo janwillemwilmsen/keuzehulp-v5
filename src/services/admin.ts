@@ -268,4 +268,10 @@ export const adminService = {
         .order('updated_at', { ascending: false })
     );
   },
+
+  deleteUserSession: async (id: string) => {
+    return handleApiResult(
+      supabase.from('user_sessions').delete().eq('id', id)
+    );
+  },
 };

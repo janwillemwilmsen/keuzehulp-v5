@@ -6,6 +6,7 @@ export default function SessionOverview() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSessions();
@@ -35,6 +36,21 @@ export default function SessionOverview() {
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Weet je zeker dat je deze sessie wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+    setDeletingId(id);
+    try {
+      await adminService.deleteUserSession(id);
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (expandedId === id) setExpandedId(null);
+    } catch (e) {
+      console.error('Delete failed', e);
+      alert('Verwijderen mislukt. Probeer het opnieuw.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const exportToCSV = () => {
@@ -163,12 +179,21 @@ export default function SessionOverview() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => toggleExpand(session.id)}
-                            className="text-primary hover:underline font-medium text-sm"
-                          >
-                            {isExpanded ? 'Inklappen' : 'Bekijk details'}
-                          </button>
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              onClick={() => toggleExpand(session.id)}
+                              className="text-primary hover:underline font-medium text-sm"
+                            >
+                              {isExpanded ? 'Inklappen' : 'Bekijk details'}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(session.id)}
+                              disabled={deletingId === session.id}
+                              className="text-destructive hover:text-destructive/80 hover:underline font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {deletingId === session.id ? 'Bezig…' : 'Verwijder'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {isExpanded && (
