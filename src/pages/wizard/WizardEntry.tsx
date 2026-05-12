@@ -9,10 +9,16 @@ export default function WizardEntry() {
   const { loadQuestionnaire, questionnaireData, loadingData } = useWizard();
 
   useEffect(() => {
-    // Determine the supplier styling dynamically if we can (for now fallback from id or just 'essent')
-    const mockSupplier = id?.includes('direct') ? 'energiedirect' : 'essent';
-    if (id) loadQuestionnaire(id, mockSupplier);
+    if (id) loadQuestionnaire(id, null as any);
   }, [id, loadQuestionnaire]);
+
+  // Once the questionnaire data is loaded, update the supplier slug from
+  // the actual DB relation instead of guessing from the UUID.
+  useEffect(() => {
+    if (questionnaireData?.suppliers?.slug) {
+      loadQuestionnaire(questionnaireData.id, questionnaireData.suppliers.slug);
+    }
+  }, [questionnaireData, loadQuestionnaire]);
 
   const themeStyle = brandThemeStyle(questionnaireData?.suppliers);
 

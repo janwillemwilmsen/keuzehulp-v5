@@ -4,7 +4,7 @@ import { DEFAULT_SCORING_SETTINGS, ScoringSettings } from '@/services/calculator
 
 interface WizardState {
   questionnaireId: string | null;
-  supplierPrefix: 'essent' | 'energiedirect' | null;
+  supplierPrefix: string | null;
   answers: Record<string, string[]>; // questionId -> array of selected answerIds
   feedbackAnswers: Record<string, Record<string, { rating?: any, text?: string }>>; // wizardQuestionId -> feedbackQuestionId -> data
   questionnaireData: any | null;
@@ -13,7 +13,7 @@ interface WizardState {
   loadingData: boolean;
   setAnswer: (questionId: string, answerIds: string[]) => void;
   setFeedbackAnswer: (wizardQuestionId: string, feedbackQuestionId: string, field: 'rating' | 'text', value: any) => void;
-  loadQuestionnaire: (id: string, supplier: 'essent' | 'energiedirect') => void;
+  loadQuestionnaire: (id: string, supplier: string | null) => void;
   setResultsData: (data: any[]) => void;
 }
 
@@ -21,7 +21,7 @@ const WizardContext = createContext<WizardState | undefined>(undefined);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
   const [questionnaireId, setQuestionnaireId] = useState<string | null>(null);
-  const [supplierPrefix, setSupplierPrefix] = useState<'essent' | 'energiedirect' | null>(null);
+  const [supplierPrefix, setSupplierPrefix] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [feedbackAnswers, setFeedbackAnswers] = useState<Record<string, Record<string, { rating?: any, text?: string }>>>({});
   const [questionnaireData, setQuestionnaireData] = useState<any | null>(null);
@@ -132,9 +132,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const loadQuestionnaire = (id: string, supplier: 'essent' | 'energiedirect') => {
+  const loadQuestionnaire = (id: string, supplier: string | null) => {
     if (id !== questionnaireId) {
       setQuestionnaireId(id);
+    }
+    if (supplier) {
       setSupplierPrefix(supplier);
     }
   };
