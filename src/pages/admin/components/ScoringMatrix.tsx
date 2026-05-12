@@ -75,7 +75,9 @@ function ScoreCell({
 
 // ─── Main Matrix ──────────────────────────────────────────────────────────────
 
-export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, onUpdateAnswer }: any) {
+export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, onUpdateAnswer, onMoveAnswer }: any) {
+  const sorted = [...answers].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id));
+
   return (
     <table className="w-full text-sm text-left">
       <thead className="text-xs uppercase bg-muted/50 border-b">
@@ -86,11 +88,11 @@ export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, 
               {ct.name}
             </th>
           ))}
-          <th className="px-2 py-3 w-10 border-l" />
+          <th className="px-2 py-3 w-20 border-l" />
         </tr>
       </thead>
       <tbody className="divide-y">
-        {[...answers].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id)).map((answer: any) => (
+        {sorted.map((answer: any, idx: number) => (
           <tr key={answer.id} className="align-top hover:bg-muted/5 transition-colors">
 
             {/* Answer text + optional helper description */}
@@ -142,14 +144,34 @@ export default function ScoringMatrix({ answers, contractTypes, onDeleteAnswer, 
               );
             })}
 
-            {/* Delete */}
-            <td className="px-2 py-3 border-l text-center align-top">
-              <button
-                onClick={() => onDeleteAnswer(answer.id)}
-                className="text-xs text-destructive hover:underline"
-              >
-                Wis
-              </button>
+            {/* Actions: move + delete */}
+            <td className="px-2 py-3 border-l align-top">
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex gap-0.5">
+                  <button
+                    onClick={() => onMoveAnswer?.(idx, 'up')}
+                    disabled={idx === 0}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted p-0.5 rounded disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                    title="Omhoog"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                  </button>
+                  <button
+                    onClick={() => onMoveAnswer?.(idx, 'down')}
+                    disabled={idx === sorted.length - 1}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted p-0.5 rounded disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                    title="Omlaag"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+                <button
+                  onClick={() => onDeleteAnswer(answer.id)}
+                  className="text-xs text-destructive hover:underline"
+                >
+                  Wis
+                </button>
+              </div>
             </td>
           </tr>
         ))}

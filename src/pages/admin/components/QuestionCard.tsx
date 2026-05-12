@@ -51,6 +51,31 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
     } catch (e) { console.error(e); }
   };
 
+  const handleMoveAnswer = async (answerIndex: number, direction: 'up' | 'down') => {
+    const sorted = [...(question.answers || [])].sort(
+      (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0) || a.id.localeCompare(b.id)
+    );
+    const targetIndex = direction === 'up' ? answerIndex - 1 : answerIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sorted.length) return;
+
+    // Normalize so every answer has a distinct order_index
+    sorted.forEach((a: any, i: number) => { a.order_index = i + 1; });
+
+    const currentA = sorted[answerIndex];
+    const targetA = sorted[targetIndex];
+    const tmp = currentA.order_index;
+    currentA.order_index = targetA.order_index;
+    targetA.order_index = tmp;
+
+    try {
+      await Promise.all([
+        adminService.updateAnswer(currentA.id, { order_index: currentA.order_index }),
+        adminService.updateAnswer(targetA.id, { order_index: targetA.order_index }),
+      ]);
+      onUpdate();
+    } catch (e) { console.error(e); }
+  };
+
   const isOpen = qType === 'open';
 
   return (
@@ -130,6 +155,7 @@ export default function QuestionCard({ question, contractTypes, onDelete, onUpda
               contractTypes={contractTypes}
               onDeleteAnswer={handleDeleteAnswer}
               onUpdateAnswer={handleUpdateAnswer}
+              onMoveAnswer={handleMoveAnswer}
             />
           </div>
           {/* Add Answer */}
