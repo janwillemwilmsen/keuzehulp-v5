@@ -248,13 +248,6 @@ export default function WizardResults() {
           );
         })}
 
-        {/* CTA */}
-        {winner && (
-          <button className="w-full h-14 rounded-xl bg-primary text-primary-foreground text-lg font-bold shadow hover:bg-primary/90 transition-colors">
-            Kies {winner.name}
-          </button>
-        )}
-
         {/* Debug Panel — only when show_debug is on for this questionnaire */}
         {showDebug && trace && <DebugPanel trace={trace} />}
 

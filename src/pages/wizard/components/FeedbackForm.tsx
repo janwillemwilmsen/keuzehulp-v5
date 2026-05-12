@@ -60,8 +60,8 @@ export default function FeedbackForm({ title, questions, values, onChange, isSte
           </div>
           {(q.label_low || q.label_high) && (
             <div className="flex justify-between w-[272px] mt-2 text-xs text-muted-foreground mx-auto md:mx-0 px-1">
-              <span>{q.label_low || ''}</span>
-              <span className="text-right">{q.label_high || ''}</span>
+              <span className="w-[50px]">{q.label_low || ''}</span>
+              <span className="w-[50px] text-right">{q.label_high || ''}</span>
             </div>
           )}
         </div>
