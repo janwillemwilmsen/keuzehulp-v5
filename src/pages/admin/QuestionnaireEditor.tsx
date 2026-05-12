@@ -101,6 +101,10 @@ export default function QuestionnaireEditor() {
     
     if (targetIndex < 0 || targetIndex >= questions.length) return;
     
+    // Ensure every question has a concrete, distinct order_index before swapping.
+    // Legacy data may have null values which makes swapping a no-op.
+    questions.forEach((q: any, i: number) => { q.order_index = i + 1; });
+
     const currentQ = questions[index];
     const targetQ = questions[targetIndex];
     
