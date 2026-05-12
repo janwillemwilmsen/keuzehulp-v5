@@ -7,6 +7,8 @@ interface FeedbackQuestion {
   rating_type: 'none' | '1-5' | '1-10' | 'yes_no';
   has_open_field: boolean;
   order_index: number;
+  label_low?: string | null;
+  label_high?: string | null;
 }
 
 interface FeedbackFormProps {
@@ -56,10 +58,12 @@ export default function FeedbackForm({ title, questions, values, onChange, isSte
               </button>
             ))}
           </div>
-          <div className="flex justify-between w-[272px] mt-2 text-xs text-muted-foreground mx-auto md:mx-0 px-1">
-            <span>Helemaal <br />niet duidelijk</span>
-            <span className="text-right">Heel <br />duidelijk</span>
-          </div>
+          {(q.label_low || q.label_high) && (
+            <div className="flex justify-between w-[272px] mt-2 text-xs text-muted-foreground mx-auto md:mx-0 px-1">
+              <span>{q.label_low || ''}</span>
+              <span className="text-right">{q.label_high || ''}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -80,10 +84,12 @@ export default function FeedbackForm({ title, questions, values, onChange, isSte
               </button>
             ))}
           </div>
-          <div className="flex justify-between w-full max-w-[472px] mt-2 text-xs text-muted-foreground mx-auto md:mx-0 px-1">
-            <span>Helemaal niet duidelijk</span>
-            <span>Heel duidelijk</span>
-          </div>
+          {(q.label_low || q.label_high) && (
+            <div className="flex justify-between w-full max-w-[472px] mt-2 text-xs text-muted-foreground mx-auto md:mx-0 px-1">
+              <span>{q.label_low || ''}</span>
+              <span className="text-right">{q.label_high || ''}</span>
+            </div>
+          )}
         </div>
       )}
 

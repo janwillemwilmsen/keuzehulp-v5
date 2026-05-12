@@ -96,6 +96,28 @@ export default function FeedbackSettings() {
               <span>Met open toelichting veld?</span>
             </label>
           </div>
+          {(q.rating_type === '1-5' || q.rating_type === '1-10') && (
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-2">
+                <span className="text-muted-foreground whitespace-nowrap">Label laag:</span>
+                <input
+                  value={q.label_low ?? ''}
+                  onChange={(e) => handleUpdate(q.id, 'label_low', e.target.value || null)}
+                  placeholder="bv. Helemaal niet duidelijk"
+                  className="bg-muted/50 px-2 py-1 rounded border text-sm w-full min-w-0"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-muted-foreground whitespace-nowrap">Label hoog:</span>
+                <input
+                  value={q.label_high ?? ''}
+                  onChange={(e) => handleUpdate(q.id, 'label_high', e.target.value || null)}
+                  placeholder="bv. Heel duidelijk"
+                  className="bg-muted/50 px-2 py-1 rounded border text-sm w-full min-w-0"
+                />
+              </label>
+            </div>
+          )}
         </div>
         <button
           onClick={() => handleDelete(q.id)}
