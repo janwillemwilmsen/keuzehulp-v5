@@ -162,7 +162,8 @@ export default function SessionOverview() {
       const escapeCSV = (val: any) => {
         if (val === null || val === undefined) return '';
         const str = String(val);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        // We now use semicolon as delimiter, so we escape if the string contains a semicolon, quote, or newline
+        if (str.includes(';') || str.includes('"') || str.includes('\n')) {
           return `"${str.replace(/"/g, '""')}"`;
         }
         return str;
@@ -182,10 +183,10 @@ export default function SessionOverview() {
         ...feedbackArr.map(q => feedbackTextMap.get(q) || '')
       ];
 
-      return rowData.map(escapeCSV).join(',');
+      return rowData.map(escapeCSV).join(';');
     });
 
-    const csvContent = [headers.join(','), ...rows].join('\n');
+    const csvContent = [headers.join(';'), ...rows].join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
