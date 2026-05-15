@@ -56,40 +56,133 @@ export default function SessionOverview() {
   const exportToCSV = () => {
     if (!sessions.length) return;
 
-    const headers = ['ID', 'Datum', 'Keuzehulp', 'Leverancier', 'Resultaat 1', 'Percentage 1', 'Vragen & Antwoorden', 'Feedback'];
-    
+    // Pass 1: Gather all unique contract types, question texts, and feedback question texts
+    const contractTypeNames = new Set<string>();
+    const questionTexts = new Set<string>();
+    const feedbackQuestions = new Set<string>();
+
+    sessions.forEach(session => {
+      const data = session.session_data || {};
+      
+      if (data.results) {
+        data.results.forEach((r: any) => contractTypeNames.add(r.name));
+      }
+      
+      if (data.answers) {
+        Object.values(data.answers).forEach((ans: any) => {
+          if (ans.questionText) questionTexts.add(ans.questionText);
+        });
+      }
+      
+      if (data.feedback) {
+        Object.entries(data.feedback).forEach(([wQId, fbGroup]: [string, any]) => {
+          let context = 'Resultaten';
+          if (wQId !== 'results' && data.answers?.[wQId]?.questionText) {
+            context = data.answers[wQId].questionText;
+          } else if (wQId !== 'results') {
+            context = `Vraag (${wQId})`;
+          }
+
+          Object.values(fbGroup).forEach((fb: any) => {
+            if (fb.questionText) {
+              feedbackQuestions.add(`${context} - ${fb.questionText}`);
+            }
+          });
+        });
+      }
+    });
+
+    const contractTypesArr = Array.from(contractTypeNames);
+    const questionsArr = Array.from(questionTexts);
+    const feedbackArr = Array.from(feedbackQuestions);
+
+    const headers = [
+      'ID', 
+      'Datum', 
+      'Keuzehulp', 
+      'Leverancier', 
+      'Status', 
+      'Aanbevolen Contract', 
+      'Aanbevolen Score (%)',
+      ...contractTypesArr.map(ct => `Score: ${ct} (%)`),
+      ...questionsArr.map(q => `Antwoord: ${q}`),
+      ...feedbackArr.map(q => `Feedback Score: ${q}`),
+      ...feedbackArr.map(q => `Feedback Tekst: ${q}`)
+    ];
+
     const rows = sessions.map(session => {
       const data = session.session_data || {};
-      const winner = data.results && data.results.length > 0 ? data.results[0] : null;
-      
-      const answersText = Object.values(data.answers || {}).map((ans: any) => {
-        const text = ans.questionText || '';
-        const selected = ans.selectedAnswers?.map((sa: any) => sa.text).join(', ') || '';
-        return `${text}: ${selected}`;
-      }).join(' | ');
+      const isCompleted = data.results && data.results.length > 0;
+      const winner = isCompleted ? data.results[0] : null;
 
-      let feedbackText = '';
+      const resultsMap = new Map();
+      if (data.results) {
+        data.results.forEach((r: any) => resultsMap.set(r.name, r.percentage));
+      }
+
+      const answersMap = new Map();
+      if (data.answers) {
+        Object.values(data.answers).forEach((ans: any) => {
+          const selected = ans.selectedAnswers?.map((sa: any) => sa.text).join('; ') || '';
+          answersMap.set(ans.questionText, selected);
+        });
+      }
+
+      const feedbackScoreMap = new Map();
+      const feedbackTextMap = new Map();
+      
       if (data.feedback) {
-        Object.entries(data.feedback).forEach(([, fbGroup]: [string, any]) => {
+        Object.entries(data.feedback).forEach(([wQId, fbGroup]: [string, any]) => {
+          let context = 'Resultaten';
+          if (wQId !== 'results' && data.answers?.[wQId]?.questionText) {
+            context = data.answers[wQId].questionText;
+          } else if (wQId !== 'results') {
+            context = `Vraag (${wQId})`;
+          }
+
           Object.values(fbGroup).forEach((fb: any) => {
-             const fbQ = fb.questionText || '';
-             const fbR = fb.rating ? `Score: ${fb.rating}` : '';
-             const fbT = fb.text ? `Tekst: "${fb.text}"` : '';
-             feedbackText += `[${fbQ} -> ${fbR} ${fbT}] `;
+            const text = fb.questionText;
+            if (!text) return;
+            
+            const columnKey = `${context} - ${text}`;
+            
+            if (fb.rating !== undefined && fb.rating !== null && fb.rating !== '') {
+              const current = feedbackScoreMap.get(columnKey);
+              feedbackScoreMap.set(columnKey, current ? `${current} | ${fb.rating}` : fb.rating);
+            }
+            
+            if (fb.text) {
+              const current = feedbackTextMap.get(columnKey);
+              feedbackTextMap.set(columnKey, current ? `${current} | ${fb.text}` : fb.text);
+            }
           });
         });
       }
 
-      return [
+      const escapeCSV = (val: any) => {
+        if (val === null || val === undefined) return '';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const rowData = [
         session.id,
         new Date(session.updated_at).toISOString(),
-        `"${(session.questionnaires?.title || '').replace(/"/g, '""')}"`,
+        session.questionnaires?.title || '',
         session.supplier_slug || '',
-        `"${(winner ? winner.name : '').replace(/"/g, '""')}"`,
+        isCompleted ? 'Afgerond' : 'Bezig',
+        winner ? winner.name : '',
         winner ? winner.percentage : '',
-        `"${answersText.replace(/"/g, '""')}"`,
-        `"${feedbackText.replace(/"/g, '""')}"`
-      ].join(',');
+        ...contractTypesArr.map(ct => resultsMap.get(ct) || ''),
+        ...questionsArr.map(q => answersMap.get(q) || ''),
+        ...feedbackArr.map(q => feedbackScoreMap.get(q) || ''),
+        ...feedbackArr.map(q => feedbackTextMap.get(q) || '')
+      ];
+
+      return rowData.map(escapeCSV).join(',');
     });
 
     const csvContent = [headers.join(','), ...rows].join('\n');
